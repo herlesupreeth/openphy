@@ -318,7 +318,7 @@ bool UHDDevice<T>::initRates(int rbs)
     try {
         if (_type != DEV_TYPE_X300) {
             mcr = 32 * rate;
-            while (mcr > 61.44e6) mcr /= 2.0;
+            while (mcr > 61.44e6 / _chans) mcr /= 2.0;
 
             _dev->set_master_clock_rate(mcr);
         }

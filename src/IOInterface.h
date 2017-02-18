@@ -22,6 +22,10 @@ public:
 
     void setFreq(double freq);
     double setGain(double gain);
+
+    double getFreq();
+    double getGain();
+
     void shiftFreq(double offset);
     void resetFreq();
 
@@ -39,6 +43,7 @@ private:
     int _ref;
     string _args;
     int64_t _ts0;
+    double _freq, _gain;
 };
 
 #endif /* _IO_INTERFACE_ */

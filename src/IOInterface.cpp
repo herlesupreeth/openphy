@@ -246,13 +246,27 @@ int IOInterface<T>::getBuffer(vector<vector<T>> &bufs,
 template <typename T>
 void IOInterface<T>::setFreq(double freq)
 {
+    _freq = freq;
     _usrp->setFreq(freq);
 }
 
 template <typename T>
 double IOInterface<T>::setGain(double gain)
 {
-    return _usrp->setGain(gain);
+    _gain = _usrp->setGain(gain);
+    return _gain;
+}
+
+template <typename T>
+double IOInterface<T>::getFreq()
+{
+    return _freq;
+}
+
+template <typename T>
+double IOInterface<T>::getGain()
+{
+    return _gain;
 }
 
 template <typename T>

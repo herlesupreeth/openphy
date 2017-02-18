@@ -74,7 +74,7 @@ int SynchronizerPDSCH::drive(int adjust)
                 }
                 _pssMisses = 0;
             } else {
-                if (++_pssMisses > 10) reset();
+                if (++_pssMisses > 10) resetState();
                 break;
             }
         }
@@ -83,7 +83,7 @@ int SynchronizerPDSCH::drive(int adjust)
         /* SSS must match so we only check timing/frequency on 0 */
         if (ltime->subframe == 5) {
             if (!syncPSS4() && _pssMisses > 100) {
-                reset();
+                resetState();
                 break;
             }
         }
@@ -125,6 +125,7 @@ int SynchronizerPDSCH::drive(int adjust)
  */
 void SynchronizerPDSCH::start()
 {
+    _stop = false;
     IOInterface<complex<short>>::start();
 
     for (int counter = 0;; counter++) {
@@ -141,6 +142,8 @@ void SynchronizerPDSCH::start()
         }
 
         _converter.reset();
+        if (_reset) resetState();
+        if (_stop) break;
     }
 }
 

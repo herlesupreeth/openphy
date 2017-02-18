@@ -38,6 +38,7 @@
 #include "slot.h"
 #include "sigvec_internal.h"
 #include "log.h"
+#include "socket.h"
 
 #define LTE_RB_LEN		12
 
@@ -184,111 +185,85 @@ static int reserved_rb(int rbs, int rb, int slot, int l, int subframe)
 	return 0;
 }
 
-static int pdsch_extract_basic_tx1(struct pdsch_slot **pdsch, int chans,
-				   struct lte_riv *riv,
-				   struct pdsch_sym_blk *sym_blk,
-				   int l, int subframe, int start)
+static int pdsch_extract_norm(struct pdsch_slot **pdsch,
+			      int rx_antennas, int tx_antennas,
+			      struct pdsch_sym_blk *sym_blk,
+			      int l, int sf, int rb)
 {
-	int rbs = pdsch[0]->slot->rbs;
-	struct lte_sym *sym[chans];
+	int n, end;
 
-	for (int i = 0; i < chans; i++)
-		sym[i] = pdsch[i]->syms[l];
-
-	int i = start;
-	int n = 0, end = 12;
-
-	if (reserved_rb(rbs, i, pdsch[0]->num, l, subframe) == 1) {
-//		printf("PDSCH: Skipping RB %i, %i\n", i, l);
+        switch (reserved_rb((*pdsch)->slot->rbs, rb,
+			    (*pdsch)->num, l, sf)) {
+	case 1:
+//		printf("PDSCH: Skipping RB %i, %i\n", rb, l);
 		return 0;
-	}
-	if (reserved_rb(rbs, i, pdsch[0]->num, l, subframe) == 2) {
+	case 2:
 		n = 0;
 		end = 6;
-	}
-	if (reserved_rb(rbs, i, pdsch[0]->num, l, subframe) == 3) {
+		break;
+	case 3:
 		n = 6;
+		end = 12;
+		break;
+	default:
+		n = 0;
 		end = 12;
 	}
 
-	for (n = n / 2; n < end / 2; n++) {
+	for (; n < end; n += 2) {
 //		printf("l %i, rb %i, sc %i, idx %i\n",
-//		       l, i, 2 * n, sym_blk->idx);
-		if (chans == 2) {
-			lte_unprecode_1x2(sym[0], sym[1], i,
-					  2 * n, 2 * n + 1,
-					  sym_blk->vec, sym_blk->idx);
-		} else {
-			lte_unprecode_1x1(sym[0], i,
-					  2 * n, 2 * n + 1,
-					  sym_blk->vec, sym_blk->idx);
-		}
+//		       l, rb, 2 * n, sym_blk->idx);
+
+		struct lte_sym *s0, *s1 = NULL;
+
+		s0 = (*pdsch)->syms[l];
+		if (rx_antennas == 2)
+			s1 = pdsch[1]->syms[l];
+
+		lte_unprecode(s0, s1,
+                              tx_antennas, rx_antennas, rb,
+			      n, n + 1,
+                              sym_blk->vec, sym_blk->idx);
 		sym_blk->idx += 2;
 	}
 
 	return 0;
 }
 
-static int pdsch_extract_basic_tx2(struct pdsch_slot **pdsch,
-				   int chans, struct lte_riv *riv,
-				   struct pdsch_sym_blk *sym_blk,
-				   int l, int subframe, int start)
+static int pdsch_extract_ref1(struct pdsch_slot **pdsch, int rx_antennas,
+			      struct pdsch_sym_blk *sym_blk,
+			      int l, int subframe, int rb)
 {
-	int i, rbs = pdsch[0]->slot->rbs;
-	struct lte_sym *sym[chans];
+	int n, end;
 
-	for (i = 0; i < chans; i++)
-		sym[i] = pdsch[i]->syms[l];
-
-	i = start;
-
-	if (reserved_rb(rbs, i, pdsch[0]->num, l, subframe)) {
-//		printf("PDSCH: Skipping RB %i, %i\n", i, l);
+        switch (reserved_rb((*pdsch)->slot->rbs, rb,
+			    (*pdsch)->num, l, subframe)) {
+	case 1:
+//		printf("PDSCH: Skipping RB %i, %i\n", rb, l);
 		return 0;
+	case 2:
+		n = 0;
+		end = 6;
+		break;
+	case 3:
+		n = 6;
+		end = 12;
+		break;
+	default:
+		n = 0;
+		end = 12;
 	}
 
-	for (int n = 0; n < LTE_RB_LEN / 2; n++) {
-//		printf("l %i, rb %i, sc %i, idx %i\n",
-//			l, i, 2 * n, sym_blk->idx);
-		if (chans == 2) {
-			lte_unprecode_2x2(sym[0], sym[1], i,
-					  2 * n, 2 * n + 1,
-					  sym_blk->vec, sym_blk->idx);
-		} else {
-			lte_unprecode_2x1(sym[0], i,
-					  2 * n, 2 * n + 1,
-					  sym_blk->vec, sym_blk->idx);
-		}
+	while (n < end) {
+		int sc0, sc1;
 
-		sym_blk->idx += 2;
-	}
-
-	return 0;
-}
-
-static int pdsch_extract_ref_tx1(struct pdsch_slot **pdsch, int chans,
-				 struct lte_riv *riv,
-				 struct pdsch_sym_blk *sym_blk,
-				 int l, int subframe, int start)
-{
-	int i, sc0, sc1;
-	int rbs = pdsch[0]->slot->rbs;
-	struct lte_sym *sym[chans];
-
-	for (i = 0; i < chans; i++)
-		sym[i] = pdsch[i]->syms[l];
-
-	i = start;
-
-	if (reserved_rb(rbs, i, pdsch[0]->num, l, subframe))
-		return 0;
-
-	for (int n = 0; n < LTE_RB_LEN;) {
-		if (lte_chk_ref(pdsch[0]->slot->subframe, pdsch[0]->num, l, n, 1)) {
+		if (lte_chk_ref((*pdsch)->slot->subframe,
+				(*pdsch)->num, l, n, 1)) {
 			sc0 = n + 1;
 			sc1 = n + 2;
 			n += 3;
-		} else if (lte_chk_ref(pdsch[0]->slot->subframe, pdsch[0]->num, l, n + 1, 1)) {
+		} else if (lte_chk_ref((*pdsch)->slot->subframe,
+				       (*pdsch)->num, l, n + 1, 1)) {
 			sc0 = n + 0;
 			sc1 = n + 2;
 			n += 3;
@@ -298,48 +273,55 @@ static int pdsch_extract_ref_tx1(struct pdsch_slot **pdsch, int chans,
 			n += 2;
 		}
 
-		if (chans == 2)
-			lte_unprecode_1x2(sym[0], sym[1], i, sc0, sc1,
-					  sym_blk->vec, sym_blk->idx);
-		else
-			lte_unprecode_1x1(sym[0], i, sc0, sc1,
-					  sym_blk->vec, sym_blk->idx);
+		struct lte_sym *s0, *s1 = NULL;
 
+		s0 = pdsch[0]->syms[l];
+		if (rx_antennas == 2)
+			s1 = pdsch[1]->syms[l];
+
+		lte_unprecode(s0, s1, 1, rx_antennas, rb,
+			      sc0, sc1, sym_blk->vec, sym_blk->idx);
 		sym_blk->idx += 2;
 	}
 
 	return 0;
 }
 
-static int pdsch_extract_ref_tx2(struct pdsch_slot **pdsch, int chans,
-				 struct lte_riv *riv,
-				 struct pdsch_sym_blk *sym_blk,
-				 int l, int subframe, int start)
+static int pdsch_extract_ref2(struct pdsch_slot **pdsch, int rx_antennas,
+			      struct pdsch_sym_blk *sym_blk,
+			      int l, int subframe, int rb)
 {
-	int i, sc0, sc1, sc2, sc3;
-	int rbs = pdsch[0]->slot->rbs;
-	struct lte_sym *sym[chans];
+	int n = 0, end = 12;
 
-	for (i = 0; i < chans; i++)
-		sym[i] = pdsch[i]->syms[l];
-
-	i = start;
-
-	if (reserved_rb(rbs, i, pdsch[0]->num, l, subframe))
+        switch (reserved_rb((*pdsch)->slot->rbs, rb,
+			    (*pdsch)->num, l, subframe)) {
+	case 1:
+//		printf("PDSCH: Skipping RB %i, %i\n", rb, l);
 		return 0;
+	case 2:
+		n = 0;
+		end = 6;
+		break;
+	case 3:
+		n = 6;
+		end = 12;
+		break;
+	}
 
-	for (int n = 0; n < LTE_RB_LEN; n += 6) {
-		if (chk_reserved(pdsch[0], n)) {
+	for (; n < end; n += 6) {
+		int sc0, sc1, sc2, sc3;
+
+		if (chk_reserved(*pdsch, n)) {
 			sc0 = n + 1;
 			sc1 = n + 2;
 			sc2 = n + 4;
 			sc3 = n + 5;
-		} else if (chk_reserved(pdsch[0], n + 1)) {
+		} else if (chk_reserved(*pdsch, n + 1)) {
 			sc0 = n + 0;
 			sc1 = n + 2;
 			sc2 = n + 3;
 			sc3 = n + 5;
-		} else if (chk_reserved(pdsch[0], n + 2)) {
+		} else if (chk_reserved(*pdsch, n + 2)) {
 			sc0 = n + 0;
 			sc1 = n + 1;
 			sc2 = n + 3;
@@ -349,44 +331,53 @@ static int pdsch_extract_ref_tx2(struct pdsch_slot **pdsch, int chans,
 			return -1;
 		}
 
-		if (chans == 2) {
-			lte_unprecode_2x2(sym[0], sym[1], i, sc0, sc1,
-					  sym_blk->vec, sym_blk->idx);
-			sym_blk->idx += 2;
-			lte_unprecode_2x2(sym[0], sym[1], i, sc2, sc3,
-					  sym_blk->vec, sym_blk->idx);
-			sym_blk->idx += 2;
-		} else {
-			lte_unprecode_2x1(sym[0], i, sc0, sc1,
-					  sym_blk->vec, sym_blk->idx);
-			sym_blk->idx += 2;
-			lte_unprecode_2x1(sym[0], i, sc2, sc3,
-					  sym_blk->vec, sym_blk->idx);
-			sym_blk->idx += 2;
-		}
+//		printf("l %i, rb %i, sc %i, idx %i\n",
+//			l, rb, 2 * n, sym_blk->idx);
+
+		struct lte_sym *s1, *s0;
+
+		s0 = pdsch[0]->syms[l];
+		if (rx_antennas == 2)
+			s1 = pdsch[1]->syms[l];
+		else
+			s1 = NULL;
+
+		lte_unprecode(s0, s1, 2, rx_antennas, rb,
+			      sc0, sc1, sym_blk->vec, sym_blk->idx);
+		sym_blk->idx += 2;
+		lte_unprecode(s0, s1, 2, rx_antennas, rb,
+			      sc2, sc3, sym_blk->vec, sym_blk->idx);
+		sym_blk->idx += 2;
 	}
 
 	return 0;
 }
 
-static int pdsch_extract_rb(struct pdsch_slot **slot, int chans, int ant,
-			    int l, int subframe, struct lte_riv *riv,
+static int pdsch_extract_rb(struct pdsch_slot **slot, int rx_antennas,
+			    int tx_antennas,
+			    int l, int subframe,
 			    struct pdsch_sym_blk *sym_blk, int rb)
 {
-	if (!l || (l == 4)) {
-		if (ant == 2)
-			pdsch_extract_ref_tx2(slot, chans, riv,
-					      sym_blk, l, subframe, rb);
-		if (ant == 1)
-			pdsch_extract_ref_tx1(slot, chans, riv,
-					      sym_blk, l, subframe, rb);
-	} else {
-		if (ant == 2)
-			pdsch_extract_basic_tx2(slot, chans,
-						riv, sym_blk, l, subframe, rb);
-		if (ant == 1)
-			pdsch_extract_basic_tx1(slot, chans,
-						riv, sym_blk, l, subframe, rb);
+	switch (l) {
+	case 0:
+	case 4:
+		if (tx_antennas == 2)
+			pdsch_extract_ref2(slot, rx_antennas,
+					   sym_blk, l, subframe, rb);
+		else if (tx_antennas == 1)
+			pdsch_extract_ref1(slot, rx_antennas,
+					   sym_blk, l, subframe, rb);
+		break;
+	case 1:
+	case 2:
+	case 3:
+	case 5:
+	case 6:
+		pdsch_extract_norm(slot, rx_antennas, tx_antennas,
+				   sym_blk, l, subframe, rb);
+		break;
+	default:
+		return -1;
 	}
 
 	return 0;
@@ -547,8 +538,8 @@ wireshark:
 }
 
 static int pdsch_extract_symbols(struct pdsch_slot **slot,
-				 int rx_ants, int tx_ants, int sf,
-				 struct lte_riv *riv,
+				 int rx_antennas, int tx_antennas,
+				 int sf, struct lte_riv *riv,
 				 struct pdsch_sym_blk *sym_blk)
 {
 	int i, l, cfi = 0;
@@ -569,8 +560,8 @@ static int pdsch_extract_symbols(struct pdsch_slot **slot,
 	/* Extract symbols slot 0 */
 	for (l = cfi; l < 7; l++) {
 		for (i = 0; i < riv->n_vrb; i++) {
-			pdsch_extract_rb(slot, rx_ants, tx_ants, l, sf,
-					 riv, sym_blk, prbs_indices[i]);
+			pdsch_extract_rb(slot, rx_antennas, tx_antennas,
+					 l, sf, sym_blk, prbs_indices[i]);
 		}
 	}
 
@@ -626,7 +617,6 @@ int lte_decode_pdsch(struct lte_subframe **subframe,
 		}
 	}
 
-
 	sym_blk = pdsch_sym_blk_alloc(tx_ants, riv.n_vrb, cfi);
 
 	pdsch_extract_symbols(slot0, chans, tx_ants, sf, &riv, sym_blk);
@@ -635,6 +625,16 @@ int lte_decode_pdsch(struct lte_subframe **subframe,
 	rc = pdsch_decode_blk(sym_blk, subframe[0]->cell_id,
 			      &subframe[0]->dci[dci_index],
 			      riv.n_vrb, tblk, ltime);
+
+#if 1
+	for (i = 0; i < sym_blk->idx / 2048; i++) {
+		lte_dsock_send((float *) &sym_blk->vec->data[i * 2048], 2048, 4);
+	}
+
+	int slen = sym_blk->idx - sym_blk->idx / 2048 * 2048;
+	if (slen > 0)
+		lte_dsock_send((float *) &sym_blk->vec->data[i * 2048], slen, 4);
+#endif
 	if (rc < 0)
 		goto release;
 release:

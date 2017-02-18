@@ -31,6 +31,7 @@
 #include "precode.h"
 #include "slot.h"
 #include "sigvec_internal.h"
+#include "socket.h"
 
 #define LTE_RB_LEN		12
 
@@ -227,6 +228,27 @@ int lte_decode_pcfich(struct lte_pcfich_info *info,
 	pcfich_extract_syms(pcfich, chans, n_cell_id, subframe[0]->reserve);
 	lte_qpsk_decode(pcfich[0]->cfi.vec,
 			pcfich[0]->cfi.code, LTE_PCFICH_CFI_LEN);
+
+	struct cxvec *shift;
+#if 1
+	int i;
+	for (i = 0; i < chans; i++) {
+		shift = cxvec_fftshift(subframe[i]->slot[0].refs[0].chan[0]);
+		lte_dsock_send((float *) shift->data, shift->len, i);
+		cxvec_free(shift);
+
+		shift = cxvec_fftshift(subframe[i]->slot[0].syms[3].fd);
+		cxvec_free(shift);
+	}
+
+	if (subframe[0]->tx_ants == 2) {
+		for (int i = 0; i < chans; i++) {
+			shift = cxvec_fftshift(subframe[i]->slot[0].refs[0].chan[1]);
+			lte_dsock_send((float *) shift->data, shift->len, 2 + i);
+			cxvec_free(shift);
+		}
+	}
+#endif
 
 	lte_scramble(pcfich[0]->cfi.code, seq, LTE_PCFICH_CFI_LEN);
 

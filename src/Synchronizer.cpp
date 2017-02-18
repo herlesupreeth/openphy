@@ -60,7 +60,7 @@ Synchronizer::Synchronizer(size_t chans)
         { LTE_STATE_SSS_SYNC,    "SSS-Sync" },
         { LTE_STATE_PBCH_SYNC,   "PBCH-Sync" },
         { LTE_STATE_PBCH,        "PBCH-Decode" },
-        { LTE_STATE_PDSCH_SYNC,  "PBCH-Sync" },
+        { LTE_STATE_PDSCH_SYNC,  "PDSCH-Sync" },
         { LTE_STATE_PDSCH,       "PDSCH-Decode" },
     };
 }
@@ -79,7 +79,7 @@ Synchronizer::~Synchronizer()
 
 bool Synchronizer::reopen(size_t rbs)
 {
-    stop();
+    IOInterface<complex<short>>::stop();
     if (!IOInterface<complex<short>>::open(rbs))
         return false;
 
@@ -91,6 +91,7 @@ bool Synchronizer::reopen(size_t rbs)
     _rx->rbs;
     _cellId = -1;
 
+    _reset = false;
     _converter.init(rbs);
 
     setFreq(_freq);
@@ -113,6 +114,7 @@ bool Synchronizer::open(size_t rbs, int ref, const std::string &args)
     _rx->rbs;
     _cellId = -1;
 
+    _reset = false;
     _converter.init(rbs);
     return true;
 }
@@ -131,6 +133,11 @@ bool Synchronizer::timeSSS(struct lte_time *t)
 bool Synchronizer::timePBCH(struct lte_time *t)
 {
     return !t->subframe ? true : false;
+}
+
+bool Synchronizer::timePDSCH(struct lte_time *t)
+{
+    return true;
 }
 
 void Synchronizer::setFreq(double freq)
@@ -361,7 +368,7 @@ int Synchronizer::drive(struct lte_time *ltime, int adjust)
             if (rc <= 0) {
                 _pssMisses -= rc;
 
-                if (_pssMisses >= 4) reset();
+                if (_pssMisses >= 4) resetState();
                 break;
             }
 
@@ -380,23 +387,40 @@ int Synchronizer::drive(struct lte_time *ltime, int adjust)
         break;
     case LTE_STATE_PBCH_SYNC:
         if (!ltime->subframe) {
-            if (!syncPSS3() && ++_pssMisses > 10) reset();
-            break;
+            if (syncPSS3()) {
+                lte_log_time(ltime);
+                changeState(LTE_STATE_PBCH);
+            } else if (++_pssMisses > 10) {
+                resetState();
+                break;
+            }
         }
-        lte_log_time(ltime);
-        changeState(LTE_STATE_PBCH);
         break;
     }
 
     return 0;
 }
 
-void Synchronizer::reset()
+void Synchronizer::resetState(bool freq)
 {
     _pssMisses = 0;
     _sssMisses = 0;
-    resetFreq();
+    _reset = false;
+
+    if (freq) resetFreq();
     changeState(LTE_STATE_PSS_SYNC);
+}
+
+void Synchronizer::reset()
+{
+    _reset = true;
+}
+
+void Synchronizer::stop()
+{
+    _stop = true;
+    sleep(1);
+    IOInterface<complex<short>>::stop();
 }
 
 void Synchronizer::changeState(auto newState)

@@ -44,18 +44,26 @@ bool SynchronizerPBCH::drive(int adjust)
 
     Synchronizer::drive(ltime, adjust);
 
+    auto logFreq = [](auto freq) {
+        ostringstream ost;
+        ost << "PBCH  : RF Frequency " << freq / 1e6 << " MHz";
+        LOG_CTRL(ost.str().c_str());
+    };
+
     switch (_rx->state) {
     case LTE_STATE_PBCH:
         if (timePBCH(ltime)) {
             if (decodePBCH(ltime, &mib)) {
+               _sssMisses = 0;
+               _pssMisses = 0;
                _mibDecodeRB = mib.rbs;
-                mibValid = true;
+               _mibValid = true;
+               logFreq(getFreq());
             } else if (++_pssMisses > 10) {
-                reset();
+                _reset = true;
             }
-            break;
         }
-        _rx->state = LTE_STATE_PBCH_SYNC;
+        changeState(LTE_STATE_PBCH_SYNC);
     }
 
     _converter.update();
@@ -67,9 +75,8 @@ bool SynchronizerPBCH::drive(int adjust)
  */
 void SynchronizerPBCH::start()
 {
-    int rc, rbs;
-
-    cout << "Starting...";
+    _stop = false;
+    IOInterface<complex<short>>::start();
 
     for (int counter = 0;; counter++) {
         int shift = getBuffer(_converter.raw(), counter,
@@ -78,12 +85,23 @@ void SynchronizerPBCH::start()
         _rx->sync.coarse = 0;
         _rx->sync.fine = 0;
 
-        drive(shift);
+        if (!_mibValid)
+            drive(shift);
+
         _converter.reset();
-    }
+
+        if (_reset) resetState(false);
+        if (_stop) break;
+   }
+}
+
+void SynchronizerPBCH::reset()
+{
+    _mibValid = false;
+    Synchronizer::reset();
 }
 
 SynchronizerPBCH::SynchronizerPBCH(size_t chans)
-  : Synchronizer(chans), _mibDecodeRB(0)
+  : Synchronizer(chans), _mibValid(false), _mibDecodeRB(0)
 {
 }

@@ -139,7 +139,7 @@ void DecoderPDSCH::decode(shared_ptr<LteBuffer> lbuf, int cfi)
 {
     auto scramSeq = _pdcchScramSeq[lbuf->sfn];
 
-    struct lte_time t = {
+    struct lte_time t {
         .frame = lbuf->fn,
         .subframe = lbuf->sfn,
     };
@@ -154,7 +154,6 @@ void DecoderPDSCH::decode(shared_ptr<LteBuffer> lbuf, int cfi)
                                        scramSeq.data());
 
         for (int i = 0; i < num_dci; i++) {
-            lte_log_time(&t);
             if (lte_decode_pdsch(_subframes.data(),
                                  _subframes.size(),
                                  _block, cfi, i, &t) > 0)
@@ -183,8 +182,7 @@ void DecoderPDSCH::start()
                                    _cellId,
                                    scramSeq.data(),
                                    _subframes.size());
-        if (rc > 0)
-            decode(lbuf, info.cfi);
+        if (rc > 0) decode(lbuf, info.cfi);
 
         setFreqOffset(lbuf);
 
