@@ -1,6 +1,7 @@
 #ifndef _SYNCHRONIZER_H_
 #define _SYNCHRONIZER_H_
 
+#include <atomic>
 #include <map>
 #include "IOInterface.h"
 #include "Converter.h"
@@ -42,6 +43,8 @@ public:
     static bool timePBCH(struct lte_time *t);
     static bool timePDSCH(struct lte_time *t);
 
+    enum class ResetFreq : bool { False, True };
+
 protected:
     bool syncPSS1();
     bool syncPSS2();
@@ -51,7 +54,7 @@ protected:
     int syncSSS();
     int drive(struct lte_time *time, int adjust);
 
-    void resetState(bool freq = true);
+    void resetState(ResetFreq r = ResetFreq::True);
     void setCellId(int cellId);
     void generateReferences();
     bool decodePBCH(struct lte_time *time, struct lte_mib *mib);
@@ -61,13 +64,13 @@ protected:
     static void logSSS(float offset);
 
     Converter<SampleType> _converter;
-    unsigned _pssMisses = 0, _sssMisses = 0;
-    int _cellId;
+    int _cellId, _pssMisses, _sssMisses;
     double _freq, _gain;
-    bool _reset, _stop;
+    atomic<bool> _reset, _stop;
 
     map<int, string> _stateStrings;
 
+    /* Internal C objects */
     vector<struct lte_ref_map *[4]> _pbchRefMaps;
     struct lte_rx *_rx;
     struct lte_sync _sync;

@@ -90,7 +90,7 @@ void SynchronizerPBCH::start()
 
         _converter.reset();
 
-        if (_reset) resetState(false);
+        if (_reset) resetState(ResetFreq::False);
         if (_stop) break;
    }
 }

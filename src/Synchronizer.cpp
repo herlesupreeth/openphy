@@ -90,8 +90,10 @@ bool Synchronizer::reopen(size_t rbs)
     _rx->last_state = LTE_STATE_PSS_SYNC;
     _rx->rbs;
     _cellId = -1;
-
+    _pssMisses = 0;
+    _sssMisses = 0;
     _reset = false;
+
     _converter.init(rbs);
 
     setFreq(_freq);
@@ -113,8 +115,10 @@ bool Synchronizer::open(size_t rbs, int ref, const std::string &args)
     _rx->last_state = LTE_STATE_PSS_SYNC;
     _rx->rbs;
     _cellId = -1;
-
+    _pssMisses = 0;
+    _sssMisses = 0;
     _reset = false;
+
     _converter.init(rbs);
     return true;
 }
@@ -401,13 +405,13 @@ int Synchronizer::drive(struct lte_time *ltime, int adjust)
     return 0;
 }
 
-void Synchronizer::resetState(bool freq)
+void Synchronizer::resetState(ResetFreq r)
 {
     _pssMisses = 0;
     _sssMisses = 0;
     _reset = false;
 
-    if (freq) resetFreq();
+    if (r == ResetFreq::True) resetFreq();
     changeState(LTE_STATE_PSS_SYNC);
 }
 

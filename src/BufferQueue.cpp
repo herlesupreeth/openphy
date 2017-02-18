@@ -29,8 +29,8 @@ size_t BufferQueue::size()
 std::shared_ptr<LteBuffer> BufferQueue::read()
 {
     std::lock_guard<std::mutex> guard(mutex);
-    if (q.empty())
-        return NULL;
+
+    if (q.empty()) return nullptr;
     auto buf = q.front();
     q.pop();
 
