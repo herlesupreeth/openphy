@@ -34,8 +34,8 @@ FreqAverager::FreqAverager(const FreqAverager &a)
 }
 
 FreqAverager::FreqAverager(FreqAverager &&a)
-  : _size(a._size), _freqs(move(a._freqs))
 {
+    *this = move(a);
 }
 
 FreqAverager &FreqAverager::operator=(const FreqAverager &a)

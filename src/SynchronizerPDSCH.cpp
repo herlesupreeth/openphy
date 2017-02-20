@@ -73,16 +73,15 @@ int SynchronizerPDSCH::drive(int adjust)
                     changeState(LTE_STATE_PDSCH_SYNC);
                 }
                 _pssMisses = 0;
-            } else {
-                if (++_pssMisses > 10) resetState();
-                break;
+            } else if (++_pssMisses > 10) {
+                resetState();
             }
         }
         break;
     case LTE_STATE_PDSCH_SYNC:
         /* SSS must match so we only check timing/frequency on 0 */
         if (ltime->subframe == 5) {
-            if (!syncPSS4() && _pssMisses > 100) {
+            if (syncPSS4() == StatePSS::NotFound && _pssMisses > 100) {
                 resetState();
                 break;
             }

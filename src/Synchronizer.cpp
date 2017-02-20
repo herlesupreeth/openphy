@@ -158,7 +158,7 @@ void Synchronizer::setGain(double gain)
 /*
  * Stage 1 PSS synchronizer
  */
-bool Synchronizer::syncPSS1()
+Synchronizer::StatePSS Synchronizer::syncPSS1()
 {
     int target = LTE_N0_SLOT_LEN - LTE_N0_CP0_LEN - 1;
 
@@ -176,15 +176,15 @@ bool Synchronizer::syncPSS1()
         _rx->time.subframe = 0;
         _rx->sync.n_id_2 = _sync.n_id_2;
 
-        return true;
+        return StatePSS::Found;
     }
-    return false;
+    return StatePSS::NotFound;
 }
 
 /*
  * Stage 2 PSS synchronizer
  */
-bool Synchronizer::syncPSS2()
+Synchronizer::StatePSS Synchronizer::syncPSS2()
 {
     int target = LTE_N0_SLOT_LEN - LTE_N0_CP0_LEN - 1;
     int min = target - 4;
@@ -211,20 +211,20 @@ bool Synchronizer::syncPSS2()
         LOG_PSS("Time domain detection failed");
     }
 
-    return confidence > 0;
+    return confidence > 0 ? StatePSS::Found : StatePSS::NotFound;
 }
 
 /*
  * Stage 3 PSS synchronizer
  */
-bool Synchronizer::syncPSS3()
+Synchronizer::StatePSS Synchronizer::syncPSS3()
 {
     /* Why is this different from the PDSCH case? */
     int target = LTE_N0_SLOT_LEN - LTE_N0_CP0_LEN - 1;
     int min = target - 4;
     int max = target + 4;
     int n_id_2;
-    bool found = false;
+    auto state = StatePSS::NotFound;
 
     _converter.convertPSS();
     struct cxvec *bufs[_chans];
@@ -236,22 +236,23 @@ bool Synchronizer::syncPSS3()
     n_id_2 = lte_pss_detect(_rx, bufs, _chans);
     if (n_id_2 == _rx->sync.n_id_2) {
         if ((_sync.coarse > min) && (_sync.coarse < max))
-            found = true;
+            state = StatePSS::Found;
     }
 
-    if (!found) {
+    if (state == StatePSS::NotFound) {
         LOG_PSS("PSS detection failed");
-        return false;
+        _pssMisses++;
+    } else {
+        _rx->sync.coarse = _sync.coarse - target;
     }
 
-    _rx->sync.coarse = _sync.coarse - target;
-    return true;
+    return state;
 }
 
 /*
  * Stage 4 PSS synchronizer
  */
-bool Synchronizer::syncPSS4()
+Synchronizer::StatePSS Synchronizer::syncPSS4()
 {
     int target = LTE_N0_SLOT_LEN - LTE_N0_CP0_LEN - 1;
     int min = target - 4;
@@ -265,7 +266,7 @@ bool Synchronizer::syncPSS4()
 
     if ((_sync.coarse <= min) || (_sync.coarse >= max)) {
         _pssMisses++;
-        return false;
+        return StatePSS::NotFound;
     }
 
     _rx->sync.coarse = _sync.coarse - target;
@@ -273,21 +274,20 @@ bool Synchronizer::syncPSS4()
 
     if (lte_pss_detect3(_rx, bufs, _chans) < 0) {
         _pssMisses++;
-        return false;
+        return StatePSS::NotFound;
     }
 
-    return true;
+    return StatePSS::Found;
 }
 
 /*
  * SSS synchronizer
  */
-int Synchronizer::syncSSS()
+Synchronizer::StateSSS Synchronizer::syncSSS()
 {
     int target = LTE_N0_SLOT_LEN - LTE_N0_CP0_LEN - 1;
     int min = target - 4;
     int max = target + 4;
-    int miss = 0;
 
     _converter.convertPSS();
     struct cxvec *bufs[_chans];
@@ -298,28 +298,28 @@ int Synchronizer::syncSSS()
     if (_sync.coarse > min && _sync.coarse < max)
         _rx->sync.coarse = _sync.coarse - target;
     else
-        miss++;
+        _pssMisses++;
 
     if (lte_pss_detect(_rx, bufs, _chans) != _rx->sync.n_id_2) {
         LOG_PSS("Frequency domain detection failed");
-        miss++;
+        _pssMisses++;
     }
 
-    int dn = lte_sss_detect(_rx, _rx->sync.n_id_2, bufs, _chans, &_sync);
-    if (dn < 0) {
-        LOG_SSS("No matching sequence found");
-        miss++;
-    } else if (dn > 0) {
-        return dn;
-    }
+    int rc = lte_sss_detect(_rx, _rx->sync.n_id_2, bufs, _chans, &_sync);
+    if (rc > 0)
+        return StateSSS::Found;
+    else if (rc == 0)
+        return StateSSS::Searching;
 
-    return -miss;
+    LOG_SSS("No matching sequence found");
+    _sssMisses++;
+    return StateSSS::NotFound;
 }
 
 /*
  * PBCH MIB Decoder
  */
-bool Synchronizer::decodePBCH(struct lte_time *ltime, struct lte_mib *mib)
+bool Synchronizer::decodePBCH(struct lte_time *time, struct lte_mib *mib)
 {
     struct lte_subframe *lsub[_chans];
 
@@ -336,7 +336,7 @@ bool Synchronizer::decodePBCH(struct lte_time *ltime, struct lte_mib *mib)
     } else if (rc == 0) {
         LOG_PBCH("MIB decoding failed");
     } else {
-        ltime->frame = mib->fn;
+        time->frame = mib->fn;
     }
 
     for (auto &l : lsub) lte_subframe_free(l);
@@ -347,12 +347,12 @@ bool Synchronizer::decodePBCH(struct lte_time *ltime, struct lte_mib *mib)
 /*
  * Base drive sequence includes PSS synchronization stages 1-3
  */
-int Synchronizer::drive(struct lte_time *ltime, int adjust)
+void Synchronizer::drive(struct lte_time *time, int adjust)
 {
     switch (_rx->state) {
     case LTE_STATE_PSS_SYNC:
-        if (syncPSS1()) {
-            lte_log_time(ltime);
+        if (syncPSS1() == StatePSS::Found) {
+            lte_log_time(time);
             logPSS(_sync.mag, _sync.coarse);
             changeState(LTE_STATE_PSS_SYNC2);
         } else {
@@ -360,49 +360,44 @@ int Synchronizer::drive(struct lte_time *ltime, int adjust)
         }
         break;
     case LTE_STATE_PSS_SYNC2:
-        if (!ltime->subframe) {
-            lte_log_time(ltime);
-            if (syncPSS2()) changeState(LTE_STATE_SSS_SYNC);
-            else changeState(LTE_STATE_PSS_SYNC);
+        if (!time->subframe) {
+            lte_log_time(time);
+            if (syncPSS2() == StatePSS::Found)
+                changeState(LTE_STATE_SSS_SYNC);
+            else
+                changeState(LTE_STATE_PSS_SYNC);
         }
         break;
     case LTE_STATE_SSS_SYNC:
-        if (!ltime->subframe) {
-            int rc = syncSSS();
-            if (rc <= 0) {
-                _pssMisses -= rc;
+        if (!time->subframe) {
+            if (syncSSS() == StateSSS::Found) {
+                 shiftFreq(_sync.f_offset);
+                 time->subframe = _sync.dn;
 
-                if (_pssMisses >= 4) resetState();
-                break;
+                 _rx->sync.n_id_1 = _sync.n_id_1;
+                 _rx->sync.n_id_cell = _sync.n_id_cell;
+
+                 if (_cellId != _sync.n_id_cell)
+                     setCellId(_sync.n_id_cell);
+
+                 lte_log_time(time);
+                 changeState(LTE_STATE_PBCH_SYNC);
+            } else if (_pssMisses >= 4) {
+                resetState();
             }
-
-            shiftFreq(_sync.f_offset);
-
-            ltime->subframe = _sync.dn;
-            _rx->sync.n_id_1 = _sync.n_id_1;
-            _rx->sync.n_id_cell = _sync.n_id_cell;
-
-            if (_cellId != _sync.n_id_cell)
-                setCellId(_sync.n_id_cell);
-
-            lte_log_time(ltime);
-            changeState(LTE_STATE_PBCH_SYNC);
         }
         break;
     case LTE_STATE_PBCH_SYNC:
-        if (!ltime->subframe) {
-            if (syncPSS3()) {
-                lte_log_time(ltime);
+        if (!time->subframe) {
+            if (syncPSS3() == StatePSS::Found) {
+                lte_log_time(time);
                 changeState(LTE_STATE_PBCH);
-            } else if (++_pssMisses > 10) {
+            } else if (_pssMisses > 10) {
                 resetState();
-                break;
             }
         }
         break;
     }
-
-    return 0;
 }
 
 void Synchronizer::resetState(ResetFreq r)

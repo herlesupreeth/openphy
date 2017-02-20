@@ -111,34 +111,3 @@ Resampler::Resampler(unsigned P, unsigned Q, size_t filterLen)
     init(P > Q ? P : Q);
     generatePaths(paths.size());
 }
-
-Resampler::Resampler(const Resampler &r)
-  : partitions(r.P, SignalVector(r.filterLen)), history(r.filterLen),
-    paths(r.paths), filterLen(r.filterLen), P(P), Q(Q)
-{
-
-}
-
-Resampler &Resampler::operator=(const Resampler &r)
-{
-    P = r.P;
-    Q = r.Q;
-    filterLen = r.filterLen;
-    history = r.history;
-    paths = r.paths;
-    partitions = r.partitions;
-
-    return *this;
-}
-
-Resampler &Resampler::operator=(Resampler &&r)
-{
-    P = r.P;
-    Q = r.Q;
-    filterLen = r.filterLen;
-    history = move(r.history);
-    paths = move(r.paths);
-    partitions = move(r.partitions);
-
-    return *this;
-}

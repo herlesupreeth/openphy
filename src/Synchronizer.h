@@ -13,13 +13,6 @@ extern "C" {
 
 using namespace std;
 
-enum {
-    SYNC_ERR_NONE,
-    SYNC_ERR_PSS_TIME,
-    SYNC_ERR_PSS_FREQ,
-    SYNC_ERR_SSS,
-};
-
 typedef complex<short> SampleType;
 
 class Synchronizer : protected IOInterface<SampleType> {
@@ -38,21 +31,23 @@ public:
     void setFreq(double freq);
     void setGain(double gain);
 
+protected:
     static bool timePSS(struct lte_time *t);
     static bool timeSSS(struct lte_time *t);
     static bool timePBCH(struct lte_time *t);
     static bool timePDSCH(struct lte_time *t);
 
     enum class ResetFreq : bool { False, True };
+    enum class StatePSS : bool { NotFound, Found };
+    enum class StateSSS { Searching, NotFound, Found };
 
-protected:
-    bool syncPSS1();
-    bool syncPSS2();
-    bool syncPSS3();
-    bool syncPSS4();
+    StatePSS syncPSS1();
+    StatePSS syncPSS2();
+    StatePSS syncPSS3();
+    StatePSS syncPSS4();
 
-    int syncSSS();
-    int drive(struct lte_time *time, int adjust);
+    StateSSS syncSSS();
+    void drive(struct lte_time *ltime, int adjust);
 
     void resetState(ResetFreq r = ResetFreq::True);
     void setCellId(int cellId);

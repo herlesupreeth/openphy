@@ -6,12 +6,12 @@
 
 struct LteBuffer {
     LteBuffer(unsigned chans = 1);
-    LteBuffer(const LteBuffer &);
-    LteBuffer(LteBuffer &&);
+    LteBuffer(const LteBuffer &) = default;
+    LteBuffer(LteBuffer &&) = default;
     ~LteBuffer() = default;
 
-    LteBuffer &operator=(const LteBuffer &);
-    LteBuffer &operator=(LteBuffer &&);
+    LteBuffer &operator=(const LteBuffer &) = default;
+    LteBuffer &operator=(LteBuffer &&) = default;
 
     unsigned cellId, rbs, ng, txAntennas;
     int fn, sfn;

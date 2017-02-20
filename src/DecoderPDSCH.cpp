@@ -145,18 +145,19 @@ void DecoderPDSCH::decode(shared_ptr<LteBuffer> lbuf, int cfi)
     };
 
     for (auto &r : _rntis) {
-        int ndci = lte_decode_pdcch(_subframes.data(),
-                                       _subframes.size(),
-                                       cfi,
-                                       _cellId,
-                                       _ng,
-                                       r.first,
-                                       scramSeq.data());
+        auto ndci = lte_decode_pdcch(_subframes.data(),
+                                     _subframes.size(),
+                                     cfi,
+                                     _cellId,
+                                     _ng,
+                                     r.first,
+                                     scramSeq.data());
         while (--ndci >= 0) {
             if (lte_decode_pdsch(_subframes.data(),
                                  _subframes.size(),
-                                 _block, cfi, ndci, &t) > 0)
+                                 _block, cfi, ndci, &t) > 0) {
                 lbuf->crcValid = true;
+            }
         }
     }
 }
@@ -231,20 +232,15 @@ DecoderPDSCH::DecoderPDSCH(unsigned chans)
 }
 
 DecoderPDSCH::DecoderPDSCH(const DecoderPDSCH &d)
-  : _pdcchScramSeq(d._pdcchScramSeq), _pcfichScramSeq(d._pcfichScramSeq),
-    _pdcchRefMaps(20), _rntis(d._rntis), _cellIdValid(d._cellIdValid),
-    _block(nullptr), _subframes(d._subframes.size())
+  : _pdcchRefMaps(20), _block(nullptr)
 {
-    if (_cellIdValid) setCellId(d._cellId, d._rbs, d._ng, d._txAntennas);
+    *this = d;
 }
 
 DecoderPDSCH::DecoderPDSCH(DecoderPDSCH &&d)
-  : _pdcchScramSeq(move(d._pdcchScramSeq)),
-    _pcfichScramSeq(move(d._pcfichScramSeq)), _pdcchRefMaps(20),
-    _rntis(move(d._rntis)), _cellIdValid(d._cellIdValid), _block(nullptr),
-    _subframes(d._subframes.size())
+  : _pdcchRefMaps(20), _block(nullptr)
 {
-    if (_cellIdValid) setCellId(d._cellId, d._rbs, d._ng, d._txAntennas);
+    *this = move(d);
 }
 
 DecoderPDSCH::~DecoderPDSCH()
@@ -265,13 +261,14 @@ DecoderPDSCH::~DecoderPDSCH()
 DecoderPDSCH &DecoderPDSCH::operator=(const DecoderPDSCH &d)
 {
     if (this != &d) {
+        for (auto &s : _subframes) lte_subframe_free(s);
+        lte_pdsch_blk_free(_block);
+
         _pdcchScramSeq = d._pdcchScramSeq;
         _pcfichScramSeq = d._pcfichScramSeq;
         _rntis = d._rntis;
         _block = nullptr;
         _cellIdValid = d._cellIdValid;
-
-        for (auto &s : _subframes) lte_subframe_free(s);
         _subframes.resize(d._subframes.size());
 
         if (_cellIdValid) setCellId(d._cellId, d._rbs, d._ng, d._txAntennas);
@@ -282,13 +279,14 @@ DecoderPDSCH &DecoderPDSCH::operator=(const DecoderPDSCH &d)
 DecoderPDSCH &DecoderPDSCH::operator=(DecoderPDSCH &&d)
 {
     if (this != &d) {
+        for (auto &s : _subframes) lte_subframe_free(s);
+        lte_pdsch_blk_free(_block);
+
         _pdcchScramSeq = move(d._pdcchScramSeq);
         _pcfichScramSeq = move(d._pcfichScramSeq);
         _rntis = move(d._rntis);
         _block = nullptr;
         _cellIdValid = d._cellIdValid;
-
-        for (auto &s : _subframes) lte_subframe_free(s);
         _subframes = move(d._subframes);
 
         if (_cellIdValid) setCellId(d._cellId, d._rbs, d._ng, d._txAntennas);

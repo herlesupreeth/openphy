@@ -46,18 +46,13 @@ SignalVector::SignalVector(size_t size, size_t head)
 SignalVector::SignalVector(const SignalVector &s)
   : _cv(nullptr)
 {
-    if (s.size() > 0) {
-        _cv = cxvec_alloc(s.size(), s._head, 0, nullptr, 0);
-        copy(s.cbegin(), s.cend(), this->begin());
-        _head = s._head;
-        _local = true;
-    }
+    *this = s;
 }
 
 SignalVector::SignalVector(SignalVector &&s)
-  : _cv(s._cv), _head(s._head), _local(s._local)
+  : _cv(nullptr)
 {
-    s._cv = nullptr;
+    *this = move(s);
 }
 
 SignalVector::~SignalVector()
@@ -70,11 +65,12 @@ SignalVector& SignalVector::operator=(const SignalVector &s)
     if (this != &s) {
         if (_local) cxvec_free(_cv);
 
-        _cv = cxvec_alloc(s.size(), s._head, 0, nullptr, 0);
-        _head = s._head;
-        _local = true;
-
-        copy(s.cbegin(), s.cend(), this->begin());
+        if (s.size() > 0) {
+            _cv = cxvec_alloc(s.size(), s._head, 0, nullptr, 0);
+            copy(s.cbegin(), s.cend(), this->begin());
+            _head = s._head;
+            _local = true;
+        }
     }
 
     return *this;

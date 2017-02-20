@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include "Converter.h"
 
 extern "C" {
@@ -26,7 +27,7 @@ extern "C" {
 
 using namespace std;
 
-static bool use_fft_1536(size_t rbs)
+static bool use_fft_1536(auto rbs)
 {
     switch (rbs) {
     case 25:
@@ -49,7 +50,7 @@ static bool use_fft_1536(size_t rbs)
  *        75          15.36 Msps        2
  *       100          23.04 Msps        1
  */
-static auto decim(size_t rbs)
+static auto decim(auto rbs)
 {
     switch (rbs) {
     case 6:
@@ -101,26 +102,22 @@ void Converter<T>::convertPDSCH()
 {
     if (_convertPDSCH) return;
 
-    float scale = 1.0 / 128.0;
-    auto convert = [](auto &a, auto &b, float c) {
-        auto ai = begin(a);
-        auto bi = begin(b);
-
-        while (ai != end(a) && bi != end(b)) {
-            *ai++ = complex<float>(bi->real()*c, bi->imag()*c);
-            bi++;
-        }
+    auto convert = [](const auto &in, auto &out) {
+        const auto s = 1.0 / 128.0;
+        transform(cbegin(in), cend(in), begin(out), [s](auto &a) {
+            return complex<float>(a.real()*s, a.imag()*s);
+        });
     };
 
-    auto _copy = [](auto &a, auto &b) {
-        copy(begin(a), end(a), begin(b));
+    auto _copy = [](const auto &in, auto &out) {
+        copy(cbegin(in), cend(in), begin(out));
     };
 
     auto p = begin(_pdsch);
     if (sizeof(T) == sizeof(complex<short>))
-        for (auto &b : _buffers) convert(*p++, b, scale);
+        for (auto &b : _buffers) convert(b, *p++);
     else if (sizeof(T) == sizeof(complex<float>))
-        for (auto &b : _buffers) _copy(*p++, b);
+        for (auto &b : _buffers) _copy(b, *p++);
     else
         throw invalid_argument("");
 
@@ -156,9 +153,7 @@ void Converter<T>::convertPSS()
 template <typename T>
 void Converter<T>::convertPBCH(size_t channel, SignalVector &v)
 {
-    if (channel > channels())
-        throw out_of_range("");
-
+    if (channel > channels()) throw out_of_range("");
     if (_convertPDSCH == false) convertPDSCH();
 
     auto &b = _pdsch[channel];
@@ -170,9 +165,7 @@ void Converter<T>::convertPBCH(size_t channel, SignalVector &v)
 template <typename T>
 void Converter<T>::delayPDSCH(vector<vector<complex<float>>> &v, int offset)
 {
-    if (v.size() != channels())
-        throw out_of_range("");
-
+    if (v.size() != channels()) throw out_of_range("");
     if (_convertPDSCH == false) convertPDSCH();
 
     int min = - _taps/2;
@@ -210,9 +203,7 @@ void Converter<T>::reset()
     _convertPBCH = false;
     _convertPSS = false;
 
-    decltype(_prev) tmp = move(_prev);
-    _prev = move(_pdsch);
-    _pdsch = move(tmp);
+    swap(_prev, _pdsch);
 }
 
 template <typename T>
@@ -224,7 +215,7 @@ size_t Converter<T>::channels() const
 template <typename T>
 size_t Converter<T>::pdschLen() const
 {
-    return !_pdsch.size() ? 0 : _pdsch[0].size();
+    return !_pdsch.size() ? 0 : _pdsch.front().size();
 }
 
 template <typename T>

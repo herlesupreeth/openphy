@@ -6,13 +6,13 @@
 class Resampler {
 public:
     Resampler() = default;
-    Resampler(const Resampler &r);
-    Resampler(const Resampler &&r);
+    Resampler(const Resampler &r) = default;
+    Resampler(Resampler &&r) = default;
     Resampler(unsigned P, unsigned Q, size_t filterLen);
     ~Resampler() = default;
 
-    Resampler& operator=(const Resampler &r);
-    Resampler& operator=(Resampler &&r);
+    Resampler& operator=(const Resampler &r) = default;
+    Resampler& operator=(Resampler &&r) = default;
 
     void rotate(SignalVector &in, SignalVector &out);
     void update(SignalVector &in);
