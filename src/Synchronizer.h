@@ -49,12 +49,12 @@ protected:
     bool syncPSS4();
 
     int syncSSS();
-    int drive(struct lte_time *ltime, int adjust);
+    int drive(struct lte_time *time, int adjust);
 
     void resetState(bool freq = true);
     void setCellId(int cellId);
     void generateReferences();
-    bool decodePBCH(struct lte_time *ltime, struct lte_mib *mib);
+    bool decodePBCH(struct lte_time *time, struct lte_mib *mib);
 
     void changeState(auto newState);
     static void logPSS(float mag, int offset);

@@ -114,8 +114,6 @@ TIMING_OFFSET_FUNC(6,22,16)
 
 int (*fine_timing_offset)(int coarse, int fine) = NULL;
 
-static int pss_adj = 0;
-
 template <typename T>
 IOInterface<T>::IOInterface(size_t chans)
   : _chans(chans)
@@ -142,11 +140,11 @@ bool IOInterface<T>::open(unsigned rbs, int ref, const std::string &args)
     _ref = ref;
     _args = args;
 
-    int base_q = get_decim(rbs);
+    int baseQ = get_decim(rbs);
     if (use_fft_1536(rbs))
-        pss_adj = 32 * 3 / 4 / base_q;
+        _pssTimingAdjust = 32 * 3 / 4 / baseQ;
     else
-        pss_adj = 32 / base_q;
+        _pssTimingAdjust = 32 / baseQ;
 
     _frameSize = lte_subframe_len(rbs);
     _ts0 += _frameSize * DEV_START_OFFSET;
@@ -184,7 +182,7 @@ template <typename T>
 int IOInterface<T>::comp_timing_offset(int coarse, int fine, int state)
 {
     int adjust = 0;
-    int pss_offset = LTE_N0_SLOT_LEN - LTE_N0_CP0_LEN - 1;
+    int pssOffset = LTE_N0_SLOT_LEN - LTE_N0_CP0_LEN - 1;
 
     if (fine == 9999)
         return -1;
@@ -196,9 +194,9 @@ int IOInterface<T>::comp_timing_offset(int coarse, int fine, int state)
         if (!state)
             adjust = coarse / 2;
         else
-            adjust = coarse * pss_adj;
+            adjust = coarse * _pssTimingAdjust;
     } else if (coarse) {
-        adjust = (coarse - pss_offset) * pss_adj;
+        adjust = (coarse - pssOffset) * _pssTimingAdjust;
     }
 
     return adjust;
@@ -218,7 +216,8 @@ void IOInterface<T>::stop()
 
 template <typename T>
 int IOInterface<T>::getBuffer(vector<vector<T>> &bufs,
-                              unsigned frameNum, int coarse, int fine, int state)
+                              unsigned frameNum, int coarse,
+                              int fine, int state)
 {
     int shift = comp_timing_offset(coarse, fine, state);
     _ts0 += shift;
@@ -289,8 +288,6 @@ void IOInterface<T>::reset()
     _ts0 = 0;
     _prevFrameNum = 0;
     _frameSize = 0;
-
-    pss_adj = 0;
 }
 
 template class IOInterface<complex<short>>;

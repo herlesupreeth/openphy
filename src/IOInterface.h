@@ -40,7 +40,7 @@ protected:
 private:
     shared_ptr<UHDDevice<T>> _usrp;
     unsigned _prevFrameNum, _frameSize, _frameMod = 10;
-    int _ref;
+    int _ref, _pssTimingAdjust;
     string _args;
     int64_t _ts0;
     double _freq, _gain;

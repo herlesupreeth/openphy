@@ -32,7 +32,8 @@
 
 static int compare(const void *a, const void *b)
 {
-	return (*(int *) a - *(int *) b);}
+	return (*(int *) a - *(int *) b);
+}
 
 static void log_riv(int riv, int start, int step, int crbs)
 {

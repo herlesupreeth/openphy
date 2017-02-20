@@ -145,18 +145,17 @@ void DecoderPDSCH::decode(shared_ptr<LteBuffer> lbuf, int cfi)
     };
 
     for (auto &r : _rntis) {
-        int num_dci = lte_decode_pdcch(_subframes.data(),
+        int ndci = lte_decode_pdcch(_subframes.data(),
                                        _subframes.size(),
                                        cfi,
                                        _cellId,
                                        _ng,
                                        r.first,
                                        scramSeq.data());
-
-        for (int i = 0; i < num_dci; i++) {
+        while (--ndci >= 0) {
             if (lte_decode_pdsch(_subframes.data(),
                                  _subframes.size(),
-                                 _block, cfi, i, &t) > 0)
+                                 _block, cfi, ndci, &t) > 0)
                 lbuf->crcValid = true;
         }
     }

@@ -48,10 +48,8 @@ void TimestampBuffer<T>::reset()
 template <typename T>
 size_t TimestampBuffer<T>::avail_smpls(int64_t ts) const
 {
-    if (ts >= time_end)
-        return 0;
-    else
-        return time_end - ts;
+    if (ts >= time_end) return 0;
+    else return time_end - ts;
 }
 
 /* Read into supplied buffer with timestamp and internal copy */
@@ -85,10 +83,8 @@ ssize_t TimestampBuffer<T>::read(vector<T> &buf, int64_t ts)
     data_start = (rd_start + buf.size()) % data.size();
     time_start = ts + buf.size();
 
-    if (time_start > time_end)
-        return -ERR_TIMESTAMP;
-    else
-        return num_smpls;
+    if (time_start > time_end) return -ERR_TIMESTAMP;
+    else return num_smpls;
 }
 
 template <typename T>
@@ -96,7 +92,6 @@ ssize_t TimestampBuffer<T>::write(const T *buf, size_t len, int64_t ts)
 {
     bool wrap = false;
     bool init = false;
-    int type_sz = 2 * sizeof(int16_t);
 
     if ((len >= data.size()) || (ts < 0) || (ts + (int64_t) len <= time_end))
         return -ERR_TIMESTAMP;

@@ -44,15 +44,11 @@ static int get_dev_type(const uhd::device_addr_t &addr)
     x300_str = addr.to_string().find("X300");
     x310_str = addr.to_string().find("X310");
 
-    if (b200_str != string::npos)
-        return DEV_TYPE_B200;
-    else if (b210_str != string::npos)
-        return DEV_TYPE_B210;
-    else if ((x300_str != string::npos) ||
-         (x310_str != string::npos))
-        return DEV_TYPE_X300;
-
-    return DEV_TYPE_UNKNOWN;
+    if (b200_str != string::npos) return DEV_TYPE_B200;
+    else if (b210_str != string::npos) return DEV_TYPE_B210;
+    else if (x300_str != string::npos) return DEV_TYPE_X300;
+    else if (x310_str != string::npos) return DEV_TYPE_X300;
+    else return DEV_TYPE_UNKNOWN;
 }
 
 static string get_dev_args(int type)
