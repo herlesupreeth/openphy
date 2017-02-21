@@ -22,7 +22,7 @@
 #include "Converter.h"
 
 extern "C" {
-#include "openphy/slot.h"
+#include "lte/slot.h"
 }
 
 using namespace std;

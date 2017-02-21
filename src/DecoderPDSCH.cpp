@@ -26,16 +26,16 @@
 #include "DecoderPDSCH.h"
 
 extern "C" {
-#include "openphy/lte.h"
-#include "openphy/pdcch.h"
-#include "openphy/ref.h"
-#include "openphy/pcfich.h"
-#include "openphy/pdsch.h"
-#include "openphy/ofdm.h"
-#include "openphy/scramble.h"
-#include "openphy/subframe.h"
-#include "openphy/log.h"
-#include "openphy/pdsch_block.h"
+#include "lte/lte.h"
+#include "lte/pdcch.h"
+#include "lte/ref.h"
+#include "lte/pcfich.h"
+#include "lte/pdsch.h"
+#include "lte/ofdm.h"
+#include "lte/scramble.h"
+#include "lte/subframe.h"
+#include "lte/log.h"
+#include "lte/pdsch_block.h"
 #include "dsp/sigvec.h"
 }
 

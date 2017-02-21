@@ -29,8 +29,8 @@
 #include "IOInterface.h"
 
 extern "C" {
-#include "openphy/log.h"
-#include "openphy/slot.h"
+#include "lte/log.h"
+#include "lte/slot.h"
 }
 
 #define DEV_START_OFFSET    20

@@ -22,3 +22,14 @@ libdsp_la_SOURCES += \
 else
 libdsp_la_SOURCES += convolve_sse.c
 endif
+
+noinst_HEADERS = \
+	convert.h \
+	convolve.h \
+	correlate.h \
+	fft.h \
+	interpolate.h \
+	mac.h \
+	sigproc.h \
+	sigvec.h \
+	sigvec_internal.h

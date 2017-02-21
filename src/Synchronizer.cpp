@@ -21,15 +21,15 @@
 #include "Synchronizer.h"
 
 extern "C" {
-#include "openphy/lte.h"
-#include "openphy/ref.h"
-#include "openphy/sync.h"
-#include "openphy/pbch.h"
-#include "openphy/slot.h"
-#include "openphy/si.h"
-#include "openphy/subframe.h"
-#include "openphy/ofdm.h"
-#include "openphy/log.h"
+#include "lte/lte.h"
+#include "lte/ref.h"
+#include "lte/sync.h"
+#include "lte/pbch.h"
+#include "lte/slot.h"
+#include "lte/si.h"
+#include "lte/subframe.h"
+#include "lte/ofdm.h"
+#include "lte/log.h"
 }
 
 /* Log PSS detection magnitude */

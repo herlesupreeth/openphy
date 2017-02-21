@@ -7,9 +7,11 @@
 #include "Converter.h"
 
 extern "C" {
-#include "openphy/lte.h"
-#include "openphy/ref.h"
+#include "lte/lte.h"
 }
+
+struct lte_rx;
+struct lte_ref_map;
 
 using namespace std;
 

@@ -32,7 +32,7 @@
 #include "FreqAverager.h"
 
 extern "C" {
-#include "openphy/log.h"
+#include "lte/log.h"
 }
 
 typedef complex<short> type;

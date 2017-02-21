@@ -36,7 +36,6 @@ AC_CHECK_LIB([m],[sincos])
 PKG_CHECK_MODULES(FFTWF, fftw3f)
 
 PKG_CHECK_MODULES(UHD, uhd >= 003.004.000)
-PKG_CHECK_MODULES(OPENFEC, turbofec >= 0.0)
 
 dnl check for processor family
 AX_EXT
@@ -45,7 +44,8 @@ AM_CONDITIONAL(ARCH_ARM, [test "x$with_neon" = "xyes" || test "x$with_neon_vfpv4
 AM_CONDITIONAL(ARCH_ARM_A15, [test "x$with_neon_vfpv4" = "xyes"])
 
 AC_OUTPUT(
-	src/openphy/Makefile
+	src/lte/Makefile
 	src/dsp/Makefile
+	src/turbo/Makefile
 	src/Makefile
 	Makefile)

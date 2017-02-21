@@ -25,7 +25,7 @@
 #include "UHDDevice.h"
 
 extern "C" {
-#include "openphy/log.h"
+#include "lte/log.h"
 }
 
 #define RX_BUFLEN        (1 << 20)
