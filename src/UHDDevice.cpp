@@ -57,7 +57,7 @@ void UHDDevice<T>::init(int64_t &ts, size_t rbs,
         if (b200 != string::npos)      return DEV_B200;
         else if (b210 != string::npos) return DEV_B210;
         else if (x300 != string::npos) return DEV_X300;
-        else if (x310 != string::npos) return DEV_X300;
+        else if (x310 != string::npos) return DEV_X310;
         else                           return DEV_UNKNOWN;
     };
 
@@ -70,6 +70,7 @@ void UHDDevice<T>::init(int64_t &ts, size_t rbs,
         { DEV_B200, "" },
         { DEV_B210, "" },
         { DEV_X300, "master_clock_rate=184.32e6" },
+        { DEV_X310, "master_clock_rate=184.32e6" },
     };
 
     addr = uhd::device_addr_t(args + argsMap.at(_type));
@@ -296,7 +297,7 @@ bool UHDDevice<T>::initRates(int rbs)
     ost << "DEV   : " << "Setting rate to " << rate/1e6 << " MHz";
     LOG_DEV(ost.str().c_str());
     try {
-        if (_type != DEV_X300) {
+        if (_type == DEV_B200 || _type == DEV_B210) {
              double mcr = rate;
              if (mcr < 5e6)
                  while (mcr < 30.72e6 / _chans) mcr *= 2.0;

@@ -47,6 +47,7 @@ public:
         DEV_B200,
         DEV_B210,
         DEV_X300,
+        DEV_X310,
         DEV_UNKNOWN,
     };
 
