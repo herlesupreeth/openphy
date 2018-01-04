@@ -47,18 +47,20 @@ void UHDDevice<T>::init(int64_t &ts, size_t rbs,
     LOG_DEV(ost.str().c_str());
 
     auto parseDeviceType = [](const auto addr)->DeviceType {
-        size_t b200, b210, x300, x310;
+        const map<string, DeviceType> devMap {
+            { "B200", DEV_B200 },
+            { "B210", DEV_B210 },
+            { "X300", DEV_X300 },
+            { "X310", DEV_X310 },
+            { "N300", DEV_N300 },
+            { "N310", DEV_N310 },
+        };
 
-        b200 = addr.to_string().find("B200");
-        b210 = addr.to_string().find("B210");
-        x300 = addr.to_string().find("X300");
-        x310 = addr.to_string().find("X310");
-
-        if (b200 != string::npos)      return DEV_B200;
-        else if (b210 != string::npos) return DEV_B210;
-        else if (x300 != string::npos) return DEV_X300;
-        else if (x310 != string::npos) return DEV_X310;
-        else                           return DEV_UNKNOWN;
+        for (auto dev : devMap) {
+            if (addr.to_string().find(dev.first) != string::npos)
+                return dev.second;
+        }
+        return DEV_UNKNOWN;
     };
 
     _type = parseDeviceType(addrs.front());
@@ -71,11 +73,12 @@ void UHDDevice<T>::init(int64_t &ts, size_t rbs,
         { DEV_B210, "" },
         { DEV_X300, "master_clock_rate=184.32e6" },
         { DEV_X310, "master_clock_rate=184.32e6" },
+        { DEV_N300, "master_clock_rate=122.88e6" },
+        { DEV_N310, "master_clock_rate=122.88e6" },
     };
 
-    addr = uhd::device_addr_t(args + argsMap.at(_type));
     try {
-        _dev = uhd::usrp::multi_usrp::make(addr);
+        _dev = uhd::usrp::multi_usrp::make(uhd::device_addr_t(args + argsMap.at(_type)));
     } catch (const exception &ex) {
         throw runtime_error("UHD device construction failed");
     }
@@ -121,30 +124,6 @@ void UHDDevice<T>::resetFreq()
     ost << "DEV   : Resetting RF frequency to "
         << _base_freq / 1e6 << " MHz";
     LOG_DEV(ost.str().c_str());
-}
-
-static double get_rate(int rbs)
-{
-    switch (rbs) {
-    case 6:
-        return 1.92e6;
-    case 15:
-        return 3.84e6;
-    case 25:
-        return 5.76e6;
-    case 50:
-        return 11.52e6;
-    case 75:
-        return 15.36e6;
-    case 100:
-        return 23.04e6;
-    default:
-        ostringstream ost;
-        ost << "DEV   :  - Invalid sample rate selection " << rbs;
-        LOG_ERR(ost.str().c_str());
-    }
-
-    return 0.0;
 }
 
 template <typename T>
@@ -289,27 +268,54 @@ double UHDDevice<T>::setGain(double gain)
 template <typename T>
 bool UHDDevice<T>::initRates(int rbs)
 {
-    double rate = get_rate(rbs);
-    if (rate == 0.0)
+    const map<int, double> rateMapRadix2 {
+        { 6,   1.92e6 },
+        { 15,  3.84e6 },
+        { 25,  7.68e6 },
+        { 50,  15.36e6 },
+        { 75,  15.36e6 },
+        { 100, 30.72e6 },
+    };
+    const map<int, double> rateMapRadix3 {
+        { 6,   1.92e6 },
+        { 15,  3.84e6 },
+        { 25,  5.76e6 },
+        { 50,  11.52e6 },
+        { 75,  15.36e6 },
+        { 100, 23.04e6 },
+    };
+
+    double targetRate;
+    try {
+        if (_type == DEV_N300 || _type == DEV_N310)
+            targetRate = rateMapRadix2.at(rbs);
+        else
+            targetRate = rateMapRadix3.at(rbs);
+    } catch (const exception &ex) {
+        ostringstream ost;
+        ost << "DEV   : " << "Invalid resource block selection";
+        LOG_ERR(ost.str().c_str());
         return false;
+    }
 
     ostringstream ost;
-    ost << "DEV   : " << "Setting rate to " << rate/1e6 << " MHz";
+    ost << "DEV   : " << "Setting rate to " << targetRate/1e6 << " MHz";
     LOG_DEV(ost.str().c_str());
     try {
         if (_type == DEV_B200 || _type == DEV_B210) {
-             double mcr = rate;
+             double mcr = targetRate;
              if (mcr < 5e6)
                  while (mcr < 30.72e6 / _chans) mcr *= 2.0;
              _dev->set_master_clock_rate(mcr);
         }
-        _dev->set_rx_rate(rate);
+        _dev->set_rx_rate(targetRate);
+        _rate = _dev->get_rx_rate();
     } catch (const exception &ex) {
+        ostringstream ost;
         ost << "DEV   : " << "Rate setting failed " << ex.what();
         LOG_ERR(ost.str().c_str());
+        return false;
     }
-
-    _rate = _dev->get_rx_rate();
     return true;
 }
 
@@ -404,7 +410,14 @@ void UHDDevice<T>::reset()
 template <typename T>
 bool UHDDevice<T>::supportRadix3() const
 {
-    return true;
+    switch (_type) {
+    case DEV_N300:
+    case DEV_N310:
+    case DEV_UNKNOWN:
+        return false;
+    default:
+        return true;
+    };
 }
 
 template <typename T>
