@@ -451,7 +451,7 @@ static __attribute__((constructor)) void init()
 	struct cxvec *in_6rb, *out_6rb;
 	struct cxvec *buf_3rb0, *buf_3rb1;
 
-	in_6rb = cxvec_alloc((lte_cp_len(6) + 128) * 7,
+	in_6rb = cxvec_alloc((lte_cp_len(6, false) + 128) * 7,
 			     0, 0, NULL, CXVEC_FLG_FFT_ALIGN);
 	out_6rb = cxvec_alloc(128 * 7, 0, 0, NULL, CXVEC_FLG_FFT_ALIGN);
 
@@ -459,7 +459,7 @@ static __attribute__((constructor)) void init()
 	buf_3rb1 = cxvec_alloc(64, 0, 0, NULL, CXVEC_FLG_FFT_ALIGN);
 
 	fft_3rb = init_fft(0, 64, 1, 0, 0, 1, 1, buf_3rb0, buf_3rb1, 1);
-	fft_6rb = init_fft(0, 128, 7, lte_cp_len(6) + 128,
+	fft_6rb = init_fft(0, 128, 7, lte_cp_len(6, false) + 128,
 			   128, 1, 1, in_6rb, out_6rb, 0);
 
 	buf_sss = cxvec_alloc_simple(64);

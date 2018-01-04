@@ -31,6 +31,8 @@ public:
     void setFreq(double freq);
     void setGain(double gain);
 
+    bool useRadix3() { return _useRadix3; }
+
 protected:
     static bool timePSS(struct lte_time *t);
     static bool timeSSS(struct lte_time *t);

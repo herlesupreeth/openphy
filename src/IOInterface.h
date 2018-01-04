@@ -36,6 +36,7 @@ public:
 protected:
     const unsigned _chans;
     unsigned _rbs;
+    bool _useRadix3;
 
 private:
     std::shared_ptr<UHDDevice<T>> _usrp;

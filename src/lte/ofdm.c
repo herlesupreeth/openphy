@@ -92,7 +92,7 @@ static void lte_sym_rb_map(struct lte_sym *sym)
 			continue;
 		}
 
-		pos = lte_rb_pos(rbs, i);
+		pos = lte_rb_pos(rbs, sym->slot->subframe->radix3, i);
 		sym->rb[i] = cxvec_subvec(sym->fd, pos,  0, 0, LTE_RB_LEN);
 	}
 }
@@ -100,7 +100,7 @@ static void lte_sym_rb_map(struct lte_sym *sym)
 static int lte_sym_chan_rb_map_special(struct lte_ref *ref, int rb, int p)
 {
 	int len = LTE_RB_LEN / 2;
-	int rbs = ref->sym->slot->subframe->rbs;
+	int rbs = ref->slot->subframe->rbs;
 	int rb0, rb1;
 
 	if ((rbs == 15) && (rb == 7)) {
@@ -136,7 +136,7 @@ static int lte_sym_chan_rb_map_special(struct lte_ref *ref, int rb, int p)
 static int lte_sym_chan_rb_map(struct lte_ref *ref, int p)
 {
 	int pos;
-	int rbs = ref->sym->slot->subframe->rbs;
+	int rbs = ref->slot->subframe->rbs;
 
 	/* We have an extra magnitude channel */
 	if (p >= 2 + 1) {
@@ -152,7 +152,7 @@ static int lte_sym_chan_rb_map(struct lte_ref *ref, int p)
 			continue;
 		}
 
-		pos = lte_rb_pos(rbs, i);
+		pos = lte_rb_pos(rbs, ref->slot->subframe->radix3, i);
 		ref->rb[p][i] = cxvec_subvec(ref->chan[p],
 					     pos, 0, 0, LTE_RB_LEN);
 	}
@@ -252,8 +252,8 @@ int lte_chk_ref(struct lte_subframe *subframe, int slot, int l, int sc, int p)
 
 static int lte_ref_init(struct lte_slot *slot, int l)
 {
-	int rbs = slot->rbs;
-	int sym_len = lte_sym_len(rbs);
+	int rbs = slot->subframe->rbs;
+	int sym_len = lte_sym_len(rbs, slot->subframe->radix3);
 	int delay = INTERP_TAPS / 2;
 	int flags = CXVEC_FLG_MEM_INIT;
 
@@ -281,7 +281,7 @@ static int lte_ref_init(struct lte_slot *slot, int l)
 
 static void lte_ref_free(struct lte_ref *ref)
 {
-	int rbs = ref->sym->slot->rbs;
+	int rbs = ref->slot->subframe->rbs;
 
 	for (int p = 0; p < 3; p++) {
 		for (int n = 0; n < rbs; n++)
@@ -298,9 +298,9 @@ static void lte_ref_free(struct lte_ref *ref)
 /* Initialize a LTE symbol struct  */
 static int lte_sym_init(struct lte_slot *slot, int l)
 {
-	int rbs = slot->rbs;
-	int sym_len = lte_sym_len(rbs);
-	int td_pos = lte_sym_pos(rbs, l);
+	int rbs = slot->subframe->rbs;
+	int sym_len = lte_sym_len(rbs, slot->subframe->radix3);
+	int td_pos = lte_sym_pos(rbs, slot->subframe->radix3, l);
 	int fd_pos = l * sym_len;
 
 	struct lte_sym *sym = &slot->syms[l];
@@ -323,7 +323,7 @@ static int lte_sym_init(struct lte_slot *slot, int l)
  */
 static void lte_sym_free(struct lte_sym *sym)
 {
-	int rbs = sym->slot->rbs;
+	int rbs = sym->slot->subframe->rbs;
 
 	cxvec_free(sym->td);
 	cxvec_free(sym->fd);
@@ -343,8 +343,8 @@ static int lte_slot_init(struct lte_subframe *subframe,
 
 {
 	int start, rbs = subframe->rbs;
-	int slot_len = lte_slot_len(rbs);
-	int sym_len = lte_sym_len(rbs);
+	int slot_len = lte_slot_len(rbs, subframe->radix3);
+	int sym_len = lte_sym_len(rbs, subframe->radix3);
 	struct lte_slot *slot;
 
 	if (maps[0]->rbs != rbs) {
@@ -360,7 +360,6 @@ static int lte_slot_init(struct lte_subframe *subframe,
 		slot = &subframe->slot[0];
 	}
 
-	slot->rbs = rbs;
 	slot->subframe = subframe;
 	slot->td = cxvec_subvec(subframe->samples, start, 0, 0, slot_len);
 	slot->fd = cxvec_alloc(sym_len * 7, 0, 0, NULL, CXVEC_FLG_FFT_ALIGN);
@@ -397,12 +396,12 @@ static void lte_slot_free(struct lte_slot *slot)
 	cxvec_free(slot->fd);
 }
 
-static struct fft_hdl *create_fft(int rbs)
+static struct fft_hdl *create_fft(int rbs, bool radix3)
 {
 	int ilen, olen;
 	struct cxvec *in = NULL, *out = NULL;
-	int slen = lte_sym_len(rbs);
-	int clen = lte_cp_len(rbs);
+	int slen = lte_sym_len(rbs, radix3);
+	int clen = lte_cp_len(rbs, radix3);
 
 	ilen = clen + slen;
 	olen = slen;
@@ -413,20 +412,21 @@ static struct fft_hdl *create_fft(int rbs)
 	return init_fft(0, slen, 7, ilen, olen, 1, 1, in, out, 0);
 }
 
-struct lte_subframe *lte_subframe_alloc(int rbs, int cell_id, int tx_ants,
+struct lte_subframe *lte_subframe_alloc(int rbs, bool radix3, int cell_id, int tx_ants,
 					struct lte_ref_map **maps0,
 					struct lte_ref_map **maps1)
 {
 	struct lte_subframe *subframe;
-	int subframe_len = lte_subframe_len(rbs);
+	int subframe_len = lte_subframe_len(rbs, radix3);
 	int flags = CXVEC_FLG_FFT_ALIGN;
 
-	if (subframe_len < 0)
+	if (subframe_len <= 0)
 		return NULL;
 
 	subframe = (struct lte_subframe *)
 		   calloc(1, sizeof(struct lte_subframe));
 	subframe->rbs = rbs;
+	subframe->radix3 = radix3;
 	subframe->assigned = 0;
 	subframe->samples = cxvec_alloc(subframe_len, 0, 0, NULL, flags);
 	subframe->num_dci = 0;
@@ -436,7 +436,7 @@ struct lte_subframe *lte_subframe_alloc(int rbs, int cell_id, int tx_ants,
 	lte_slot_init(subframe, maps0, 0);
 	lte_slot_init(subframe, maps1, 1);
 
-	subframe->fft = create_fft(rbs);
+	subframe->fft = create_fft(rbs, radix3);
 	if (!subframe->fft) {
 		LOG_DSP_ERR("Internal FFT failure");
 		return NULL;
@@ -511,9 +511,10 @@ int lte_subframe_reset(struct lte_subframe *subframe,
 static int lte_extract_pilots(struct lte_ref *ref, int p)
 {
 	int idx;
-	int rbs = ref->sym->slot->rbs;
+	int rbs = ref->slot->subframe->rbs;
 	int res = rbs * LTE_RB_LEN;
-	int sym_len = lte_sym_len(rbs);
+	int sym_len = lte_sym_len(rbs, ref->slot->subframe->radix3);
+	bool radix3 = ref->slot->subframe->radix3;
 
 	struct lte_ref_map *map = ref->map[p];
 	struct cxvec *refs = ref->refs[p];
@@ -521,9 +522,9 @@ static int lte_extract_pilots(struct lte_ref *ref, int p)
 	float complex last = 0.0;
 
 	for (int i = 0; i < map->len; i++) {
-		idx = map->k[i] + lte_rb_pos(rbs, 0);
+		idx = map->k[i] + lte_rb_pos(rbs, radix3, 0);
 		if (idx >= sym_len)
-			idx = map->k[i] - res / 2 + lte_rb_pos_mid(rbs);
+			idx = map->k[i] - res / 2 + lte_rb_pos_mid(rbs, radix3);
 
 		refs->data[idx] = ref->sym->fd->data[idx] / map->a->data[i];
 
@@ -534,13 +535,13 @@ static int lte_extract_pilots(struct lte_ref *ref, int p)
 	}
 
 	/* Create lower virtual reference signals */
-	idx = map->k[0] + lte_rb_pos(rbs, 0);
+	idx = map->k[0] + lte_rb_pos(rbs, radix3, 0);
 	refs->data[idx - 6] = first;
 	refs->data[idx - 12] = first;
 	refs->data[idx - 18] = first;
 
 	/* Create upper virtual reference signals */
-	idx = map->k[map->len - 1] - res / 2 + lte_rb_pos_mid(rbs);
+	idx = map->k[map->len - 1] - res / 2 + lte_rb_pos_mid(rbs, radix3);
 	refs->data[idx + 6] = last;
 	refs->data[idx + 12] = last;
 	refs->data[idx + 18] = last;
@@ -710,7 +711,7 @@ static int lte_slot_convert(struct lte_subframe *subframe, int ns)
 
 	cxvec_fft(subframe->fft, slot->syms[0].td, slot->fd);
 
-	switch (slot->rbs) {
+	switch (subframe->rbs) {
 	case 15:
 		edge_rb = 7;
 		break;

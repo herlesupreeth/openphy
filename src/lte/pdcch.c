@@ -106,8 +106,8 @@ static struct pdcch_slot *pdcch_slot_alloc(struct lte_slot *slot,
 					   int cfi, int phich_groups, int *res)
 {
 	int pcfich_len = LTE_PCFICH_LEN;
-	int len = slot->rbs * 8 - pcfich_len -
-		  12 * phich_groups + (cfi - 1) * (slot->rbs * LTE_RB_LEN);
+	int len = slot->subframe->rbs * 8 - pcfich_len -
+		  12 * phich_groups + (cfi - 1) * (slot->subframe->rbs * LTE_RB_LEN);
 	struct pdcch_slot *pdcch;
 
 	if ((cfi > 3) || (cfi < 0)) {
@@ -248,7 +248,7 @@ static int pdcch_extract_syms(struct pdcch_slot **pdcch, int chans)
 		sc_cnt[i] = 0;
 	}
 
-	while (next_element(pdcch[0]->slot->rbs, &map, sc_cnt, cfi) > 0) {
+	while (next_element(pdcch[0]->slot->subframe->rbs, &map, sc_cnt, cfi) > 0) {
 		l = map.l;
 		rb = map.rb;
 		sc = map.sc;
@@ -364,7 +364,7 @@ static int pdcch_decode_bits(struct pdcch_slot *pdcch,
 			     int lev, int blk, int type, uint16_t rnti)
 {
 	int A, E, found = 0;
-	int rbs = pdcch->slot->rbs;
+	int rbs = pdcch->slot->subframe->rbs;
 	int8_t *e;
 	uint8_t *a;
 	struct lte_pdcch_blk *dblk;

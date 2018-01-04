@@ -1,6 +1,8 @@
 #ifndef _LTE_OFDM_
 #define _LTE_OFDM_
 
+#include <stdbool.h>
+
 /* OFDM demodulator symbol masks */
 #define LTE_SYM0_MASK		(1 << 0)
 #define LTE_SYM1_MASK		(1 << 1)
@@ -21,7 +23,7 @@ struct lte_slot;
 struct lte_subframe;
 struct lte_ref_map;
 
-struct lte_subframe *lte_subframe_alloc(int rbs, int cell_id, int ant,
+struct lte_subframe *lte_subframe_alloc(int rbs, bool radix3, int cell_id, int ant,
 					struct lte_ref_map **maps0,
 					struct lte_ref_map **maps1);
 void lte_subframe_free(struct lte_subframe *slot);

@@ -8,6 +8,7 @@
 #define LTE_DCI_MAX		10
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "lte.h"
 #include "dci.h"
 
@@ -38,7 +39,6 @@ struct lte_ref {
 };
 
 struct lte_slot {
-	int rbs;
 	int num;
 	struct lte_subframe *subframe;
 	struct cxvec *td;
@@ -49,6 +49,7 @@ struct lte_slot {
 
 struct lte_subframe {
 	int rbs;
+	bool radix3;
 	int assigned;
 	int cell_id;
 	int ng;

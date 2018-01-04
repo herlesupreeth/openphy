@@ -74,8 +74,7 @@ static struct pbch_slot *pbch_slot_alloc(struct lte_slot *slot)
 	int len, idx = 0;
 	struct pbch_slot *pbch;
 
-	if (slot->rbs != LTE_PBCH_NUM_RB) {
-		printf("slot->rbs %i\n", slot->rbs);
+	if (slot->subframe->rbs != LTE_PBCH_NUM_RB) {
 		LOG_PBCH_ERR("Invalid number of resouce blocks");
 		return NULL;
 	}

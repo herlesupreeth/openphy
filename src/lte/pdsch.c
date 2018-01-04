@@ -191,7 +191,7 @@ static int pdsch_extract_norm(struct pdsch_slot **pdsch,
 {
 	int n, end;
 
-        switch (reserved_rb((*pdsch)->slot->rbs, rb,
+        switch (reserved_rb((*pdsch)->slot->subframe->rbs, rb,
 			    (*pdsch)->num, l, sf)) {
 	case 1:
 //		printf("PDSCH: Skipping RB %i, %i\n", rb, l);
@@ -235,7 +235,7 @@ static int pdsch_extract_ref1(struct pdsch_slot **pdsch, int rx_antennas,
 {
 	int n, end;
 
-        switch (reserved_rb((*pdsch)->slot->rbs, rb,
+        switch (reserved_rb((*pdsch)->slot->subframe->rbs, rb,
 			    (*pdsch)->num, l, subframe)) {
 	case 1:
 //		printf("PDSCH: Skipping RB %i, %i\n", rb, l);
@@ -292,7 +292,7 @@ static int pdsch_extract_ref2(struct pdsch_slot **pdsch, int rx_antennas,
 {
 	int n = 0, end = 12;
 
-        switch (reserved_rb((*pdsch)->slot->rbs, rb,
+        switch (reserved_rb((*pdsch)->slot->subframe->rbs, rb,
 			    (*pdsch)->num, l, subframe)) {
 	case 1:
 //		printf("PDSCH: Skipping RB %i, %i\n", rb, l);

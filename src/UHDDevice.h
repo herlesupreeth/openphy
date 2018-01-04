@@ -24,6 +24,8 @@ public:
     void stop();
     void reset();
 
+    bool supportRadix3() const;
+
     void setFreq(double freq);
     double setGain(double gain);
     void shiftFreq(double offset);

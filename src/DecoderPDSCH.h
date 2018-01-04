@@ -15,7 +15,7 @@ typedef std::vector<int8_t> ScramSequence;
 
 class DecoderPDSCH {
 public:
-    DecoderPDSCH(unsigned chans = 1);
+    DecoderPDSCH(bool useRadix3, unsigned chans);
     DecoderPDSCH(const DecoderPDSCH &d);
     DecoderPDSCH(DecoderPDSCH &&d);
     ~DecoderPDSCH();
@@ -47,7 +47,7 @@ private:
     std::vector<ScramSequence> _pcfichScramSeq;
     std::map<unsigned, std::string> _rntis;
 
-    bool _cellIdValid;
+    bool _useRadix3, _cellIdValid;
     unsigned _cellId, _rbs, _ng, _txAntennas;
 
     std::shared_ptr<BufferQueue> _inboundQueue, _outboundQueue;

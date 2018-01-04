@@ -97,7 +97,7 @@ bool Synchronizer::reopen(size_t rbs)
     _sssMisses = 0;
     _reset = false;
 
-    _converter.init(rbs);
+    _converter.init(_rbs, _useRadix3);
 
     setFreq(_freq);
     setGain(_gain);
@@ -122,7 +122,7 @@ bool Synchronizer::open(size_t rbs, int ref, const std::string &args)
     _sssMisses = 0;
     _reset = false;
 
-    _converter.init(rbs);
+    _converter.init(_rbs, _useRadix3);
     return true;
 }
 
@@ -328,7 +328,7 @@ bool Synchronizer::decodePBCH(struct lte_time *time, struct lte_mib *mib)
 
     int i = 0;
     for (auto &l : lsub) {
-        l = lte_subframe_alloc(6, _cellId, 2, _pbchRefMaps[0], _pbchRefMaps[1]);
+        l = lte_subframe_alloc(6, _useRadix3, _cellId, 2, _pbchRefMaps[0], _pbchRefMaps[1]);
         SignalVector s(l->samples);
         _converter.convertPBCH(i++, s);
     }

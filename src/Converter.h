@@ -19,7 +19,7 @@ public:
     Converter &operator=(const Converter &c) = default;
     Converter &operator=(Converter &&c) = default;
 
-    void init(size_t rbs);
+    void init(size_t rbs, bool useRadix3);
 
     void convertPDSCH();
     void convertPBCH();

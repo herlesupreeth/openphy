@@ -401,6 +401,12 @@ void UHDDevice<T>::reset()
 }
 
 template <typename T>
+bool UHDDevice<T>::supportRadix3() const
+{
+    return true;
+}
+
+template <typename T>
 UHDDevice<T>::UHDDevice(size_t chans)
   : _type(DEV_UNKNOWN), _chans(chans)
 {

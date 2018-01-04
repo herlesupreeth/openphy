@@ -133,6 +133,7 @@ bool IOInterface<T>::open(unsigned rbs, int ref, const std::string &args)
     try {
         _usrp = make_shared<UHDDevice<T>>(_chans);
         _usrp->init(_ts0, rbs, ref, args);
+        _useRadix3 = _usrp->supportRadix3();
     } catch (exception& e) {
         return false;
     }
@@ -142,12 +143,12 @@ bool IOInterface<T>::open(unsigned rbs, int ref, const std::string &args)
     _args = args;
 
     int baseQ = get_decim(rbs);
-    if (use_fft_1536(rbs))
+    if (_useRadix3 && use_fft_1536(rbs))
         _pssTimingAdjust = 32 * 3 / 4 / baseQ;
     else
         _pssTimingAdjust = 32 / baseQ;
 
-    _frameSize = lte_subframe_len(rbs);
+    _frameSize = lte_subframe_len(rbs, _useRadix3);
     _ts0 += _frameSize * DEV_START_OFFSET;
 
     ostringstream ost;

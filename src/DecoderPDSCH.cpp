@@ -96,7 +96,7 @@ void DecoderPDSCH::initSubframes()
 
     for (auto &s : _subframes) {
         lte_subframe_free(s);
-        s = lte_subframe_alloc(_rbs, _cellId, _txAntennas, m1, m2);
+        s = lte_subframe_alloc(_rbs, _useRadix3, _cellId, _txAntennas, m1, m2);
     }
 }
 
@@ -230,10 +230,9 @@ void DecoderPDSCH::setFreqOffset(shared_ptr<LteBuffer> lbuf)
     lbuf->freqOffset = offset / _subframes.size();
 }
 
-DecoderPDSCH::DecoderPDSCH(unsigned chans)
-  : _pdcchScramSeq(10, ScramSequence(LTE_PDCCH_MAX_BITS)),
-    _pcfichScramSeq(10, ScramSequence(32)), _pdcchRefMaps(20),
-    _cellIdValid(false), _block(nullptr), _subframes(chans)
+DecoderPDSCH::DecoderPDSCH(bool useRadix3, unsigned chans)
+  : _pdcchScramSeq(10, ScramSequence(LTE_PDCCH_MAX_BITS)), _pcfichScramSeq(10, ScramSequence(32)),
+    _pdcchRefMaps(20), _useRadix3(useRadix3), _cellIdValid(false), _block(nullptr), _subframes(chans)
 {
 }
 
@@ -274,6 +273,7 @@ DecoderPDSCH &DecoderPDSCH::operator=(const DecoderPDSCH &d)
         _pcfichScramSeq = d._pcfichScramSeq;
         _rntis = d._rntis;
         _block = nullptr;
+        _useRadix3 = d._useRadix3;
         _cellIdValid = d._cellIdValid;
         _subframes.resize(d._subframes.size());
 
@@ -292,6 +292,7 @@ DecoderPDSCH &DecoderPDSCH::operator=(DecoderPDSCH &&d)
         _pcfichScramSeq = move(d._pcfichScramSeq);
         _rntis = move(d._rntis);
         _block = nullptr;
+        _useRadix3 = d._useRadix3;
         _cellIdValid = d._cellIdValid;
         _subframes = move(d._subframes);
 

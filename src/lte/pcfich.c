@@ -117,7 +117,7 @@ static int pcfich_extract_syms(struct pcfich_slot **pcfich,
 {
 	int tx_ants = pcfich[0]->slot->subframe->tx_ants;
 	int map, rb, sc, sc0, sc1, sc2, sc3, idx = 0;
-	int rbs = pcfich[0]->slot->rbs;
+	int rbs = pcfich[0]->slot->subframe->rbs;
 	int k_bar = LTE_RB_LEN / 2 * (n_cell_id % (2 * rbs));
 	struct pcfich_sym *syms[chans];
 

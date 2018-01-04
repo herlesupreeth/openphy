@@ -71,14 +71,14 @@ static auto decim(auto rbs)
 }
 
 template <typename T>
-void Converter<T>::init(size_t rbs)
+void Converter<T>::init(size_t rbs, bool useRadix3)
 {
     if (rbs == _rbs)
         return;
 
-    size_t pdschLen = lte_subframe_len(rbs);
-    size_t pbchLen = lte_subframe_len(6);
-    size_t pssLen = lte_subframe_len(6) / 2;
+    size_t pdschLen = lte_subframe_len(rbs, useRadix3);
+    size_t pbchLen = lte_subframe_len(6, useRadix3);
+    size_t pssLen = lte_subframe_len(6, useRadix3) / 2;
 
     for (auto &b : _buffers) b.resize(pdschLen);
     for (auto &b : _prev) b = SignalVector(pdschLen, _taps);
@@ -87,7 +87,7 @@ void Converter<T>::init(size_t rbs)
     for (auto &b : _pss) b = SignalVector(pssLen);
 
     int d = decim(rbs);
-    int pss_q = use_fft_1536(rbs) ? 32 * 3 / 4 / d : 32 / d;
+    int pss_q = useRadix3 && use_fft_1536(rbs) ? 32 * 3 / 4 / d : 32 / d;
     int pbch_q = pss_q / 2;
 
     for (auto &p : _pssResamplers) p = Resampler(1, pss_q, _taps);

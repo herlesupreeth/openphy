@@ -112,17 +112,72 @@ static const int rb_pos_map_n100[100] = {
 	LTE_N100_RB96, LTE_N100_RB97, LTE_N100_RB98, LTE_N100_RB99,
 };
 
-int lte_frame_len(int rbs)
+static const int rb_r3_pos_map_n25[25] = {
+	LTE_R3_N25_RB0,  LTE_R3_N25_RB1,  LTE_R3_N25_RB2,  LTE_R3_N25_RB3,
+	LTE_R3_N25_RB4,  LTE_R3_N25_RB5,  LTE_R3_N25_RB6,  LTE_R3_N25_RB7,
+	LTE_R3_N25_RB8,  LTE_R3_N25_RB9,  LTE_R3_N25_RB10, LTE_R3_N25_RB11,
+	LTE_R3_N25_RB12, LTE_R3_N25_RB13, LTE_R3_N25_RB14, LTE_R3_N25_RB15,
+	LTE_R3_N25_RB16, LTE_R3_N25_RB17, LTE_R3_N25_RB18, LTE_R3_N25_RB19,
+	LTE_R3_N25_RB20, LTE_R3_N25_RB21, LTE_R3_N25_RB22, LTE_R3_N25_RB23,
+	LTE_R3_N25_RB24,
+};
+
+static const int rb_r3_pos_map_n50[50] = {
+	LTE_R3_N50_RB0,  LTE_R3_N50_RB1,  LTE_R3_N50_RB2,  LTE_R3_N50_RB3,
+	LTE_R3_N50_RB4,  LTE_R3_N50_RB5,  LTE_R3_N50_RB6,  LTE_R3_N50_RB7,
+	LTE_R3_N50_RB8,  LTE_R3_N50_RB9,  LTE_R3_N50_RB10, LTE_R3_N50_RB11,
+	LTE_R3_N50_RB12, LTE_R3_N50_RB13, LTE_R3_N50_RB14, LTE_R3_N50_RB15,
+	LTE_R3_N50_RB16, LTE_R3_N50_RB17, LTE_R3_N50_RB18, LTE_R3_N50_RB19,
+	LTE_R3_N50_RB20, LTE_R3_N50_RB21, LTE_R3_N50_RB22, LTE_R3_N50_RB23,
+	LTE_R3_N50_RB24, LTE_R3_N50_RB25, LTE_R3_N50_RB26, LTE_R3_N50_RB27,
+	LTE_R3_N50_RB28, LTE_R3_N50_RB29, LTE_R3_N50_RB30, LTE_R3_N50_RB31,
+	LTE_R3_N50_RB32, LTE_R3_N50_RB33, LTE_R3_N50_RB34, LTE_R3_N50_RB35,
+	LTE_R3_N50_RB36, LTE_R3_N50_RB37, LTE_R3_N50_RB38, LTE_R3_N50_RB39,
+	LTE_R3_N50_RB40, LTE_R3_N50_RB41, LTE_R3_N50_RB42, LTE_R3_N50_RB43,
+	LTE_R3_N50_RB44, LTE_R3_N50_RB45, LTE_R3_N50_RB46, LTE_R3_N50_RB47,
+	LTE_R3_N50_RB48, LTE_R3_N50_RB49,
+};
+
+
+static const int rb_r3_pos_map_n100[100] = {
+	LTE_R3_N100_RB0,  LTE_R3_N100_RB1,  LTE_R3_N100_RB2,  LTE_R3_N100_RB3,
+	LTE_R3_N100_RB4,  LTE_R3_N100_RB5,  LTE_R3_N100_RB6,  LTE_R3_N100_RB7,
+	LTE_R3_N100_RB8,  LTE_R3_N100_RB9,  LTE_R3_N100_RB10, LTE_R3_N100_RB11,
+	LTE_R3_N100_RB12, LTE_R3_N100_RB13, LTE_R3_N100_RB14, LTE_R3_N100_RB15,
+	LTE_R3_N100_RB16, LTE_R3_N100_RB17, LTE_R3_N100_RB18, LTE_R3_N100_RB19,
+	LTE_R3_N100_RB20, LTE_R3_N100_RB21, LTE_R3_N100_RB22, LTE_R3_N100_RB23,
+	LTE_R3_N100_RB24, LTE_R3_N100_RB25, LTE_R3_N100_RB26, LTE_R3_N100_RB27,
+	LTE_R3_N100_RB28, LTE_R3_N100_RB29, LTE_R3_N100_RB30, LTE_R3_N100_RB31,
+	LTE_R3_N100_RB32, LTE_R3_N100_RB33, LTE_R3_N100_RB34, LTE_R3_N100_RB35,
+	LTE_R3_N100_RB36, LTE_R3_N100_RB37, LTE_R3_N100_RB38, LTE_R3_N100_RB39,
+	LTE_R3_N100_RB40, LTE_R3_N100_RB41, LTE_R3_N100_RB42, LTE_R3_N100_RB43,
+	LTE_R3_N100_RB44, LTE_R3_N100_RB45, LTE_R3_N100_RB46, LTE_R3_N100_RB47,
+	LTE_R3_N100_RB48, LTE_R3_N100_RB49, LTE_R3_N100_RB50, LTE_R3_N100_RB51,
+	LTE_R3_N100_RB52, LTE_R3_N100_RB53, LTE_R3_N100_RB54, LTE_R3_N100_RB55,
+	LTE_R3_N100_RB56, LTE_R3_N100_RB57, LTE_R3_N100_RB58, LTE_R3_N100_RB59,
+	LTE_R3_N100_RB60, LTE_R3_N100_RB61, LTE_R3_N100_RB62, LTE_R3_N100_RB63,
+	LTE_R3_N100_RB64, LTE_R3_N100_RB65, LTE_R3_N100_RB66, LTE_R3_N100_RB67,
+	LTE_R3_N100_RB68, LTE_R3_N100_RB69, LTE_R3_N100_RB70, LTE_R3_N100_RB71,
+	LTE_R3_N100_RB72, LTE_R3_N100_RB73, LTE_R3_N100_RB74, LTE_R3_N100_RB75,
+	LTE_R3_N100_RB76, LTE_R3_N100_RB77, LTE_R3_N100_RB78, LTE_R3_N100_RB79,
+	LTE_R3_N100_RB80, LTE_R3_N100_RB81, LTE_R3_N100_RB82, LTE_R3_N100_RB83,
+	LTE_R3_N100_RB84, LTE_R3_N100_RB85, LTE_R3_N100_RB86, LTE_R3_N100_RB87,
+	LTE_R3_N100_RB88, LTE_R3_N100_RB89, LTE_R3_N100_RB90, LTE_R3_N100_RB91,
+	LTE_R3_N100_RB92, LTE_R3_N100_RB93, LTE_R3_N100_RB94, LTE_R3_N100_RB95,
+	LTE_R3_N100_RB96, LTE_R3_N100_RB97, LTE_R3_N100_RB98, LTE_R3_N100_RB99,
+};
+
+int lte_frame_len(int rbs, bool radix3)
 {
-	return 10 * lte_subframe_len(rbs);
+	return 10 * lte_subframe_len(rbs, radix3);
 }
 
-int lte_subframe_len(int rbs)
+int lte_subframe_len(int rbs, bool radix3)
 {
-	return 2 * lte_slot_len(rbs);
+	return 2 * lte_slot_len(rbs, radix3);
 }
 
-int lte_slot_len(int rbs)
+int lte_slot_len(int rbs, bool radix3)
 {
 	switch (rbs) {
 	case 6:
@@ -130,19 +185,19 @@ int lte_slot_len(int rbs)
 	case 15:
 		return LTE_N15_SLOT_LEN;
 	case 25:
-		return LTE_N25_SLOT_LEN;
+		return radix3 ? LTE_R3_N25_SLOT_LEN : LTE_N25_SLOT_LEN;
 	case 50:
-		return LTE_N50_SLOT_LEN;
+		return radix3 ? LTE_R3_N50_SLOT_LEN : LTE_N50_SLOT_LEN;
 	case 75:
 		return LTE_N75_SLOT_LEN;
 	case 100:
-		return LTE_N100_SLOT_LEN;
+		return radix3 ? LTE_R3_N100_SLOT_LEN : LTE_N100_SLOT_LEN;
 	}
 
 	return -1;
 }
 
-int lte_sym_len(int rbs)
+int lte_sym_len(int rbs, bool radix3)
 {
 	switch (rbs) {
 	case 6:
@@ -150,19 +205,19 @@ int lte_sym_len(int rbs)
 	case 15:
 		return LTE_N15_SYM_LEN;
 	case 25:
-		return LTE_N25_SYM_LEN;
+		return radix3 ? LTE_R3_N25_SYM_LEN : LTE_N25_SYM_LEN;
 	case 50:
-		return LTE_N50_SYM_LEN;
+		return radix3 ? LTE_R3_N50_SYM_LEN : LTE_N50_SYM_LEN;
 	case 75:
 		return LTE_N75_SYM_LEN;
 	case 100:
-		return LTE_N100_SYM_LEN;
+		return radix3 ? LTE_R3_N100_SYM_LEN : LTE_N100_SYM_LEN;
 	}
 
 	return -1;
 }
 
-int lte_cp_len(int rbs)
+int lte_cp_len(int rbs, bool radix3)
 {
 	switch (rbs) {
 	case 6:
@@ -170,19 +225,19 @@ int lte_cp_len(int rbs)
 	case 15:
 		return LTE_N15_CP_LEN;
 	case 25:
-		return LTE_N25_CP_LEN;
+		return radix3 ? LTE_R3_N25_CP_LEN : LTE_N25_CP_LEN;
 	case 50:
-		return LTE_N50_CP_LEN;
+		return radix3 ? LTE_R3_N50_CP_LEN : LTE_N50_CP_LEN;
 	case 75:
 		return LTE_N75_CP_LEN;
 	case 100:
-		return LTE_N100_CP_LEN;
+		return radix3 ? LTE_R3_N100_CP_LEN : LTE_N100_CP_LEN;
 	}
 
 	return -1;
 }
 
-int lte_rb_pos(int rbs, int rb)
+int lte_rb_pos(int rbs, bool radix3, int rb)
 {
 	if (rb >= rbs)
 		return -1;
@@ -193,19 +248,19 @@ int lte_rb_pos(int rbs, int rb)
 	case 15:
 		return rb_pos_map_n15[rb];
 	case 25:
-		return rb_pos_map_n25[rb];
+		return radix3 ? rb_r3_pos_map_n25[rb] : rb_pos_map_n25[rb];
 	case 50:
-		return rb_pos_map_n50[rb];
+		return radix3 ? rb_r3_pos_map_n50[rb] : rb_pos_map_n50[rb];
 	case 75:
 		return rb_pos_map_n75[rb];
 	case 100:
-		return rb_pos_map_n100[rb];
+		return radix3 ? rb_r3_pos_map_n100[rb] : rb_pos_map_n100[rb];
 	}
 
 	return -1;
 }
 
-int lte_rb_pos_mid(int rbs)
+int lte_rb_pos_mid(int rbs, bool radix3)
 {
 	switch (rbs) {
 	case 6:
@@ -213,13 +268,13 @@ int lte_rb_pos_mid(int rbs)
 	case 15:
 		return LTE_N15_RB7_1;
 	case 25:
-		return LTE_N25_RB12_1;
+		return radix3 ? LTE_R3_N25_RB12_1 : LTE_N25_RB12_1;
 	case 50:
-		return LTE_N50_RB25;
+		return radix3 ? LTE_R3_N50_RB25 : LTE_N50_RB25;
 	case 75:
 		return LTE_N75_RB37_1;
 	case 100:
-		return LTE_N100_RB50;
+		return radix3 ? LTE_R3_N100_RB50 : LTE_N100_RB50;
 	}
 
 	return -1;
@@ -243,7 +298,22 @@ SYM_POS_MAP(50)
 SYM_POS_MAP(75)
 SYM_POS_MAP(100)
 
-int lte_sym_pos(int rbs, int l)
+#define SYM_R3_POS_MAP(X) \
+	int sym_r3_pos_map_n##X[7] = { \
+		LTE_R3_N##X##_SYM0, \
+		LTE_R3_N##X##_SYM1, \
+		LTE_R3_N##X##_SYM2, \
+		LTE_R3_N##X##_SYM3, \
+		LTE_R3_N##X##_SYM4, \
+		LTE_R3_N##X##_SYM5, \
+		LTE_R3_N##X##_SYM6, \
+	};
+
+SYM_R3_POS_MAP(25)
+SYM_R3_POS_MAP(50)
+SYM_R3_POS_MAP(100)
+
+int lte_sym_pos(int rbs, bool radix3, int l)
 {
 	if ((l < 0) || (l > 6))
 		return -1;
@@ -254,13 +324,13 @@ int lte_sym_pos(int rbs, int l)
 	case 15:
 		return sym_pos_map_n15[l];
 	case 25:
-		return sym_pos_map_n25[l];
+		return radix3 ? sym_r3_pos_map_n25[l] : sym_pos_map_n25[l];
 	case 50:
-		return sym_pos_map_n50[l];
+		return radix3 ? sym_r3_pos_map_n50[l] : sym_pos_map_n50[l];
 	case 75:
 		return sym_pos_map_n75[l];
 	case 100:
-		return sym_pos_map_n100[l];
+		return radix3 ? sym_r3_pos_map_n100[l] : sym_pos_map_n100[l];
 	}
 
 	return -1;

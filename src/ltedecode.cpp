@@ -244,8 +244,15 @@ int main(int argc, char **argv)
         pdschReturnQueue->write(std::make_shared<LteBuffer>(config.chans));
 
     asn1->open(config.port);
+    if (!sync.open(config.rbs, config.ref, config.args)) {
+        fprintf(stderr, "Radio: Failed to initialize\n");
+        return -1;
+    }
+    sync.setFreq(config.freq);
+    sync.setGain(config.gain);
+
     std::vector<DecoderPDSCH> decoders(config.threads,
-                                       DecoderPDSCH(config.chans));
+                                       DecoderPDSCH(sync.useRadix3(), config.chans));
     for (auto &d : decoders) {
         d.addRNTI(config.rnti);
         d.attachInboundQueue(pdschQueue);
@@ -254,12 +261,6 @@ int main(int argc, char **argv)
         threads.push_back(std::thread(&DecoderPDSCH::start, &d));
     }
 
-    if (!sync.open(config.rbs, config.ref, config.args)) {
-        fprintf(stderr, "Radio: Failed to initialize\n");
-        return -1;
-    }
-    sync.setFreq(config.freq);
-    sync.setGain(config.gain);
     sync.start();
 
     for (auto &t : threads)
