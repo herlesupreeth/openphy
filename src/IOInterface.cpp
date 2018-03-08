@@ -135,6 +135,9 @@ bool IOInterface<T>::open(unsigned rbs, int ref, const std::string &args)
         _usrp->init(_ts0, rbs, ref, args);
         _useRadix3 = _usrp->supportRadix3();
     } catch (exception& e) {
+        ostringstream ost;
+        ost << "DEV   : Failed to open " << e.what();
+        LOG_DEV(ost.str().c_str());
         return false;
     }
 
@@ -152,7 +155,7 @@ bool IOInterface<T>::open(unsigned rbs, int ref, const std::string &args)
     _ts0 += _frameSize * DEV_START_OFFSET;
 
     ostringstream ost;
-    ost << "DEV   : Initial timestamp " << _ts0;
+    ost << "dev   : initial timestamp " << _ts0;
     LOG_DEV(ost.str().c_str());
 
     switch (rbs) {

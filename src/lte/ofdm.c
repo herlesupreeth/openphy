@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "ofdm.h"
 #include "log.h"
@@ -53,8 +54,8 @@ static int lte_sym_rb_map_special(struct lte_sym *sym, int rb)
 		rb0 = LTE_N15_RB7;
 		rb1 = LTE_N15_RB7_1;
 	} else if ((rbs == 25) && (rb == 12)) {
-		rb0 = LTE_N25_RB12;
-		rb1 = LTE_N25_RB12_1;
+		rb0 = LTE_R3_N25_RB12;
+		rb1 = LTE_R3_N25_RB12_1;
 	} else if ((rbs == 75) && (rb == 37)) {
 		rb0 = LTE_N75_RB37;
 		rb1 = LTE_N75_RB37_1;
@@ -107,8 +108,8 @@ static int lte_sym_chan_rb_map_special(struct lte_ref *ref, int rb, int p)
 		rb0 = LTE_N15_RB7;
 		rb1 = LTE_N15_RB7_1;
 	} else if ((rbs == 25) && (rb == 12)) {
-		rb0 = LTE_N25_RB12;
-		rb1 = LTE_N25_RB12_1;
+		rb0 = LTE_R3_N25_RB12;
+		rb1 = LTE_R3_N25_RB12_1;
 	} else if ((rbs == 75) && (rb == 37)) {
 		rb0 = LTE_N75_RB37;
 		rb1 = LTE_N75_RB37_1;
@@ -536,15 +537,24 @@ static int lte_extract_pilots(struct lte_ref *ref, int p)
 
 	/* Create lower virtual reference signals */
 	idx = map->k[0] + lte_rb_pos(rbs, radix3, 0);
-	refs->data[idx - 6] = first;
-	refs->data[idx - 12] = first;
-	refs->data[idx - 18] = first;
+	float mag = cabsf(refs->data[idx + 6]) - cabsf(refs->data[idx + 0]);
+	float arg = cargf(refs->data[idx + 6]) - cargf(refs->data[idx + 0]);
+	float fm, fa;
+	for (int i = 1; i <= 2; i++) {
+	        fm = cabsf(first) - (float) i * mag;
+	        fa = cargf(first) - (float) i * arg;
+		refs->data[idx - i*6] = fm * cosf(fa) + fm * sinf(fa) * I;
+	}
 
 	/* Create upper virtual reference signals */
 	idx = map->k[map->len - 1] - res / 2 + lte_rb_pos_mid(rbs, radix3);
-	refs->data[idx + 6] = last;
-	refs->data[idx + 12] = last;
-	refs->data[idx + 18] = last;
+	mag = cabsf(refs->data[idx - 6]) - cabsf(refs->data[idx]);
+	arg = cargf(refs->data[idx - 6]) - cargf(refs->data[idx]);
+	for (int i = 1; i <= 2; i++) {
+	        fm = cabsf(last) - (float) i * mag;
+	        fa = cargf(last) - (float) i * arg;
+		refs->data[idx + i*6] = fm * cosf(fa) + fm * sinf(fa) * I;
+	}
 
 	return 0;
 }

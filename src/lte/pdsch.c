@@ -38,6 +38,7 @@
 #include "slot.h"
 #include "sigvec_internal.h"
 #include "log.h"
+#include "socket.h"
 
 #define LTE_RB_LEN		12
 
@@ -615,6 +616,15 @@ int lte_decode_pdsch(struct lte_subframe **subframe,
 			      riv.n_vrb, tblk, ltime);
 	if (rc < 0)
 		goto release;
+
+        for (i = 0; i < sym_blk->idx / 2048; i++) {
+                lte_dsock_send((float *) &sym_blk->vec->data[i * 2048], 2048, 4);
+        }
+
+        int slen = sym_blk->idx - sym_blk->idx / 2048 * 2048;
+        if (slen > 0)
+                lte_dsock_send((float *) &sym_blk->vec->data[i * 2048], slen, 4);
+
 release:
 	for (i = 0; i < chans; i++) {
 		pdsch_slot_free(slot0[i]);

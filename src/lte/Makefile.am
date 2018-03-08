@@ -32,7 +32,8 @@ liblte_la_SOURCES = \
 	pdsch_riv.c \
 	pdsch_tbs.c \
 	pdsch_block.c \
-	log.c
+	log.c \
+	socket.c
 
 noinst_HEADERS = \
 	crc.h \

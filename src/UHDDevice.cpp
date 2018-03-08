@@ -53,7 +53,7 @@ void UHDDevice<T>::init(int64_t &ts, size_t rbs,
             { "X300", DEV_X300 },
             { "X310", DEV_X310 },
             { "N300", DEV_N300 },
-            { "N310", DEV_N310 },
+            { "n310", DEV_N310 },
         };
 
         for (auto dev : devMap) {
@@ -78,7 +78,8 @@ void UHDDevice<T>::init(int64_t &ts, size_t rbs,
     };
 
     try {
-        _dev = uhd::usrp::multi_usrp::make(uhd::device_addr_t(args + argsMap.at(_type)));
+        cout << "Opening " << args + argsMap.at(_type) << endl;
+        _dev = uhd::usrp::multi_usrp::make(uhd::device_addr_t(args + "," + argsMap.at(_type)));
     } catch (const exception &ex) {
         throw runtime_error("UHD device construction failed");
     }

@@ -238,7 +238,7 @@ static int pdcch_extract_syms(struct pdcch_slot **pdcch, int chans)
 
 	if ((chans < 0) || (chans > 2)) {
 		fprintf(stderr, "PDCCH: Invalid channels %i\n", chans);
-		exit(-1);
+		return -1;
 	}
 
 	for (int i = 0; i < cfi; i++) {
